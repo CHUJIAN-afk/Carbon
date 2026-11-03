@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <title>Carbon · 碳</title>
+  <desc>石墨黑背景，青绿色碳晶格与白色 C 标志。</desc>
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="20%" r="95%"><stop stop-color="#24353d"/><stop offset="1" stop-color="#080e12"/></radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a6f7dc"/><stop offset="1" stop-color="#3bc6cf"/></linearGradient>
+    <linearGradient id="letter" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#cfede6"/></linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="40" fill="url(#bg)"/>
+  <path d="M1 130 200 15 399 130M1 270 200 385 399 270M80 1V399M320 1V399" fill="none" stroke="#638e95" stroke-opacity=".10"/>
+  <path d="m200 66 113 65v130l-113 65-113-65V131Z" fill="#102127" stroke="url(#edge)" stroke-width="3"/>
+  <path d="m200 83 97 56v112l-97 56-97-56V139Z" fill="none" stroke="#4a7478" stroke-width="1"/>
+  <path d="M265 147a78 78 0 1 0 0 102" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="42" transform="translate(0 5)"/>
+  <path d="M263 145a76 76 0 1 0 0 102" fill="none" stroke="url(#letter)" stroke-width="32" stroke-linecap="square"/>
+  <path d="m253 151 24-14M254 242l24 14" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <g fill="url(#edge)"><circle cx="200" cy="66" r="6"/><circle cx="313" cy="131" r="6"/><circle cx="313" cy="261" r="6"/><circle cx="200" cy="326" r="6"/><circle cx="87" cy="261" r="6"/><circle cx="87" cy="131" r="6"/></g>
+  <text x="45" y="57" fill="#a6f7dc" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="600">6</text>
+  <text x="200" y="365" text-anchor="middle" fill="#d4e9e6" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="600" letter-spacing="7">CARBON</text>
+</svg>
