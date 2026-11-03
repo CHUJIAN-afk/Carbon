@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "first.carbon.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "ItemEntityCacheMixin",
+    "EntitySceneMixin",
+    "ItemStackSceneMixin",
+    "LevelRendererMixin",
+    "PatchedDataComponentMapMixin",
+    "GlBufferAccessor",
+    "ItemStateMixin",
+    "ItemModelResolverMixin",
+    "ClientLevelMixin",
+    "ClientChunkCacheMixin",
+    "ItemFeatureRendererMixin",
+    "ItemStackFoilMixin",
+    "ShadowFeatureRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
