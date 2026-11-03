@@ -1,0 +1,13 @@
+{
+  "carbon.configuration.title": "%s 配置",
+  "carbon.configuration.section.carbon.client.toml": "客户端设置",
+  "carbon.configuration.enabled": "启用 Carbon",
+  "carbon.configuration.enabled.tooltip": "GPU 物品渲染优化总开关。关闭后交还原有渲染流程。",
+  "carbon.configuration.optimizeDroppedItems": "GPU 接管掉落物",
+  "carbon.configuration.optimizeDroppedItems.tooltip": "默认开启。使用专用 GPU 管线处理普通掉落物模型、自旋和缩放；关闭后保留其他模组的变换，标准模型提交仍可实例化。",
+  "carbon.configuration.physicalDroppedItems": "物理旋转视觉效果",
+  "carbon.configuration.physicalDroppedItems.tooltip": "默认关闭，需要启用 GPU 接管掉落物。按 ItemPhysicLite 的局部旋转轴翻滚，落地后平滑躺平，并以固定微小高度偏移减轻重叠闪烁。仅改变视觉，不修改速度、碰撞或拾取。",
+  "carbon.configuration.skipVisibilityChecks": "跳过掉落物可见性检查",
+  "carbon.configuration.skipVisibilityChecks.tooltip": "专用掉落物管线默认跳过遮挡与视锥检查，提交渲染距离内的全部普通掉落物。关闭后恢复原有判定；渲染距离限制始终有效。",
+  "carbon.configuration.section.carbon.client.toml.title": "客户端设置"
+}

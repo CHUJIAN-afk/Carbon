@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-labelledby="title description">
+  <title id="title">Carbon · 碳</title>
+  <desc id="description">自上而下由深灰渐变至纯黑的背景，中央小巧的灰色圆角六边形以粗线和深灰描边呈现卡通风格，象征碳的六元环结构。</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1c1c1c"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <path id="hexagon" d="M189.608 112Q200 106 210.392 112L271.014 147Q281.406 153 281.406 165V235Q281.406 247 271.014 253L210.392 288Q200 294 189.608 288L128.986 253Q118.594 247 118.594 235V165Q118.594 153 128.986 147Z"/>
+  </defs>
+  <rect width="400" height="400" fill="url(#background)"/>
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <use href="#hexagon" stroke="#393939" stroke-width="26"/>
+    <use href="#hexagon" stroke="#a0a0a0" stroke-width="19"/>
+  </g>
+</svg>
