@@ -291,7 +291,8 @@ public final class DroppedItemBatchRenderer {
     public boolean submitEntity(ItemEntity entity, float partialTick, int light, PoseStack pose, net.minecraft.client.renderer.MultiBufferSource buffers) {
         boolean submitted = false;
         boolean shadow = Carbon.IRIS.shadowPass();
-        if (active && !capturing && entity.level() == level && !entity.isCurrentlyGlowing() && (!shadow || physics)) {
+        if (active && !capturing && entity.level() == level && level.getEntity(entity.getId()) == entity
+                && !entity.isCurrentlyGlowing() && (!shadow || physics)) {
             ItemStack stack = entity.getItem();
             if (stack.isEmpty()) {
                 return false;
@@ -345,18 +346,10 @@ public final class DroppedItemBatchRenderer {
                         double dy = entity.getY() - entity.yOld;
                         double dz = entity.getZ() - entity.zOld;
                         double speed = dx * dx + dy * dy + dz * dz;
-                        cached.rate = speed > 1.0E-8 ? (float) Math.min(0.8, Math.sqrt(speed) * 4) : 0;
+                        cached.rate = !entity.onGround() && speed > 1.0E-8 ? (float) Math.min(0.8, Math.sqrt(speed) * 4) : 0;
                         if (entity.isInWater()) cached.rate *= 0.35f;
                         if (entity.isInLava()) cached.rate *= 0.15f;
-                        if (cached.rate == 0) {
-                            float target = Math.round(cached.roll / (float) Math.PI) * (float) Math.PI;
-                            float remaining = target - cached.roll;
-                            if (Math.abs(remaining) > 0.001f) {
-                                cached.rate = remaining * 0.35f;
-                            } else {
-                                cached.roll = target;
-                            }
-                        }
+                        if (entity.onGround() && !batch.gui3d) cached.roll = 0;
                         cached.motionTick = level.getGameTime();
                     }
                     if (shadow) {
