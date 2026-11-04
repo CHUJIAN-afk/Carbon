@@ -8,6 +8,8 @@
   "carbon.configuration.physicalDroppedItems": "Visual Item Physics",
   "carbon.configuration.physicalDroppedItems.tooltip": "Disabled by default; requires the GPU dropped-item pipeline. Tumble around ItemPhysicLite's local axis, settle smoothly after landing, and use a fixed tiny height offset to reduce overlapping surface flicker. Does not change velocity, collisions or pickup.",
   "carbon.configuration.skipVisibilityChecks": "Skip Item Visibility Checks",
-  "carbon.configuration.skipVisibilityChecks.tooltip": "Skip occlusion and frustum checks in the dedicated pipeline and submit all ordinary items within render distance. Disable to restore visibility checks. Distance limits always apply.",
+  "carbon.configuration.skipVisibilityChecks.tooltip": "Enabled by default, matching 0.7. Skip frustum and occlusion checks for ordinary dropped items within render distance, including items behind the camera. Disable to restore full visibility checks. Distance limits always apply.",
+  "carbon.configuration.cacheUpdateBudgetMs": "Cache Update Budget (ms)",
+  "carbon.configuration.cacheUpdateBudgetMs.tooltip": "Default 2 ms per frame, configurable from 0 to 20 ms. Queue expired dropped-item caches and keep drawing the previous scene until updates finish. 0 updates immediately. Individual item updates can exceed the budget.",
   "carbon.configuration.section.carbon.client.toml.title": "Client Settings"
 }

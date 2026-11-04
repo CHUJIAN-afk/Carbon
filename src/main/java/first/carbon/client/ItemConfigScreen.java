@@ -3,6 +3,7 @@ package first.carbon.client;
 import first.carbon.Carbon;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,6 +36,21 @@ public final class ItemConfigScreen extends Screen {
                                 Carbon.Client.DROPPED_RENDERER.invalidate();
                             }));
         }
+        var budget = addRenderableWidget(new AbstractSliderButton(width / 2 - 100, height / 2 + 48, 200, 20,
+                Component.translatable("carbon.configuration.cacheUpdateBudgetMs").append(": " + Carbon.CONFIG.cacheUpdateBudgetMs.get() + " ms"),
+                Carbon.CONFIG.cacheUpdateBudgetMs.get() / 20) {
+            @Override
+            protected void updateMessage() {
+                setMessage(Component.translatable("carbon.configuration.cacheUpdateBudgetMs").append(": " + Math.round(value * 200) / 10.0 + " ms"));
+            }
+
+            @Override
+            protected void applyValue() {
+                Carbon.CONFIG.cacheUpdateBudgetMs.set(Math.round(value * 200) / 10.0);
+                Carbon.CONFIG.spec.save();
+            }
+        });
+        budget.setTooltip(Tooltip.create(Component.translatable("carbon.configuration.cacheUpdateBudgetMs.tooltip")));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(width / 2 - 100, height - 40, 200, 20).build());
     }

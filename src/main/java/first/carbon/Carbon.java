@@ -22,6 +22,7 @@ public final class Carbon {
     public static final class Settings {
         public final ForgeConfigSpec spec;
         public final ForgeConfigSpec.BooleanValue enabled, optimizeDroppedItems, physicalDroppedItems, skipVisibilityChecks;
+        public final ForgeConfigSpec.DoubleValue cacheUpdateBudgetMs;
 
         private Settings() {
             ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -29,6 +30,7 @@ public final class Carbon {
             optimizeDroppedItems = builder.translation("carbon.configuration.optimizeDroppedItems").define("optimizeDroppedItems", true);
             physicalDroppedItems = builder.translation("carbon.configuration.physicalDroppedItems").define("physicalDroppedItems", false);
             skipVisibilityChecks = builder.translation("carbon.configuration.skipVisibilityChecks").define("skipVisibilityChecks", true);
+            cacheUpdateBudgetMs = builder.comment("CPU cache update budget per frame in milliseconds. 0 updates immediately; a single item can exceed the budget.").translation("carbon.configuration.cacheUpdateBudgetMs").defineInRange("cacheUpdateBudgetMs", 2.0, 0.0, 20.0);
             spec = builder.build();
         }
     }

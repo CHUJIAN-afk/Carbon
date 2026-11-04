@@ -12,7 +12,7 @@ description='''GPU instancing for standard item models, dropped-item animation, 
 [[dependencies.carbon]]
 modId="forge"
 mandatory=true
-versionRange="[47.4.22,)"
+versionRange="[47.0.0,)"
 ordering="NONE"
 side="CLIENT"
 [[dependencies.carbon]]
