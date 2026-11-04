@@ -51,8 +51,9 @@ vec3 physicalOffset(vec4 q, vec3 copy) {
     vec3 up = rotatePoint(q, vec3(0.0, 1.0, 0.0));
     vec3 forward = rotatePoint(q, vec3(0.0, 0.0, 1.0));
     float height = dot(abs(vec3(right.y, up.y, forward.y)), HalfSize);
-    vec3 spread = rotatePoint(q, copy);
-    spread.y = height + max(0.0, spread.y) + 0.002;
+    bool pile = copy.z < 0.0;
+    vec3 spread = rotatePoint(q, vec3(copy.xy, pile ? copy.z + 1.0 : 0.0));
+    spread.y = height + (pile ? abs(spread.y) : copy.z * (height * 2.0 + 0.002)) + 0.002;
     return spread - rotatePoint(q, Center);
 }
 

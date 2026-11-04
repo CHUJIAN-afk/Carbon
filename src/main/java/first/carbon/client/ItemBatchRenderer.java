@@ -282,7 +282,7 @@ public final class ItemBatchRenderer {
                     batch.addEntity((float) (Mth.lerp(partialTick, item.xOld, item.getX()) - originX),
                             (float) (Mth.lerp(partialTick, item.yOld, item.getY()) - originY) + (physics ? ((item.getId() * 0x9E3779B9) >>> 16) * (0.003f / 65535) : 0),
                             (float) (Mth.lerp(partialTick, item.zOld, item.getZ()) - originZ), physics ? cache.roll : item.tickCount - (float) ticks,
-                            physics ? -item.getYRot() : item.bobOffs, light, batch.extensions.shouldBobAsEntity(stack), batch.extensions.shouldSpreadAsEntity(stack), copies, cache.rate);
+                            physics ? -item.getYRot() * Mth.DEG_TO_RAD : item.bobOffs, light, batch.extensions.shouldBobAsEntity(stack), batch.extensions.shouldSpreadAsEntity(stack), copies, cache.rate);
                     batch.lastFrame = frame;
                     instances += copies;
                     collected++;

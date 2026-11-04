@@ -34,6 +34,7 @@ final class GpuItemBatch implements AutoCloseable {
     final int instanceStride;
     final boolean entityBatch;
     final boolean physics;
+    final boolean gui3d;
     boolean foil, physicsMoving, preparedValid;
     float preparedClock;
     final org.joml.Vector3f center = new org.joml.Vector3f();
@@ -61,7 +62,7 @@ final class GpuItemBatch implements AutoCloseable {
         instanceStride = entityBatch ? 40 : 144;
         AABB bounds = state.getModelBoundingBox();
         groundScaleY = (float) (-bounds.minY + 0.0625) * 4;
-        boolean gui3d = bounds.getZsize() > 0.0625;
+        gui3d = bounds.getZsize() > 0.0625;
         copySpacing = gui3d ? 0 : (float) bounds.getZsize() * 1.5f;
         extensions = IClientItemExtensions.of(stack);
         RandomSource random = RandomSource.create(net.minecraft.client.renderer.entity.state.ItemClusterRenderState.getSeedForItemStack(stack));
@@ -166,6 +167,7 @@ final class GpuItemBatch implements AutoCloseable {
         data.putLong(offset + 136, 0);
     }
 
+    // Negative z stores a compact 3D offset; nonnegative z stores the flat-item layer.
     void addEntity(float x, float y, float z, float age, float phase, int light, boolean bob, boolean spread, int copies, float rate) {
         dirty = true;
         ensureCapacity(copies);
@@ -181,7 +183,7 @@ final class GpuItemBatch implements AutoCloseable {
             MemoryUtil.memPutFloat(address + 20, phase);
             MemoryUtil.memPutFloat(address + 24, spread ? copyOffsets[offset] : 0);
             MemoryUtil.memPutFloat(address + 28, spread ? copyOffsets[offset + 1] : 0);
-            MemoryUtil.memPutFloat(address + 32, (copy - center) * copySpacing + (spread ? copyOffsets[offset + 2] : 0));
+            MemoryUtil.memPutFloat(address + 32, physics ? gui3d ? -1 + (spread ? copyOffsets[offset + 2] : 0) : copy : (copy - center) * copySpacing + (spread ? copyOffsets[offset + 2] : 0));
             MemoryUtil.memPutFloat(address + 36, physics ? rate : bob ? 1 : 0);
             address += instanceStride;
         }
