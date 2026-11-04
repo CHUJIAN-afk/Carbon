@@ -15,6 +15,10 @@ public class ClientLevelMixin {
     private void imo$changed(CallbackInfo ci) {
         Carbon.DROPPED_RENDERER.sceneDirty = true;
     }
+    @Inject(method = {"sendBlockUpdated", "onChunkLoaded", "unload"}, at = @At("HEAD"))
+    private void imo$blockChanged(CallbackInfo ci) {
+        Carbon.DROPPED_RENDERER.blockCacheDirty = true;
+    }
     @Inject(method = "entitiesForRendering", at = @At("RETURN"), cancellable = true)
     private void imo$collect(CallbackInfoReturnable<Iterable<Entity>> ci) {
         if (Carbon.DROPPED_RENDERER.collecting) {

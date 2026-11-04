@@ -62,6 +62,10 @@ final class GpuDroppedItemBatch implements AutoCloseable {
     boolean closed;
     private ByteBuffer data;
     private ByteBuffer previous;
+    private ByteBuffer updateData;
+    int updateCount;
+    int updateCapacity;
+    private boolean updatePhysicsMoving;
     private int gpuCapacity;
     private int uploadedCount;
     private boolean dirty;
@@ -249,8 +253,26 @@ final class GpuDroppedItemBatch implements AutoCloseable {
         if (count + additional > capacity) {
             capacity = Math.max(64, Math.max(capacity * 2, count + additional));
             data = data == null ? MemoryUtil.memAlloc(capacity * instanceStride) : MemoryUtil.memRealloc(data, capacity * instanceStride);
-            previous = previous == null ? MemoryUtil.memAlloc(capacity * instanceStride) : MemoryUtil.memRealloc(previous, capacity * instanceStride);
+            if (previous == null || previous.capacity() < capacity * instanceStride) {
+                previous = previous == null ? MemoryUtil.memAlloc(capacity * instanceStride) : MemoryUtil.memRealloc(previous, capacity * instanceStride);
+            }
         }
+    }
+
+    void swapUpdate() {
+        ByteBuffer data = this.data;
+        this.data = updateData;
+        updateData = data;
+        int count = this.count;
+        this.count = updateCount;
+        updateCount = count;
+        int capacity = this.capacity;
+        this.capacity = updateCapacity;
+        updateCapacity = capacity;
+        boolean moving = physicsMoving;
+        physicsMoving = updatePhysicsMoving;
+        updatePhysicsMoving = moving;
+        dirty = true;
     }
 
     long upload() {
@@ -299,8 +321,14 @@ final class GpuDroppedItemBatch implements AutoCloseable {
         }
         if (data != null) {
             MemoryUtil.memFree(data);
-            MemoryUtil.memFree(previous);
             data = null;
+        }
+        if (updateData != null) {
+            MemoryUtil.memFree(updateData);
+            updateData = null;
+        }
+        if (previous != null) {
+            MemoryUtil.memFree(previous);
             previous = null;
         }
     }

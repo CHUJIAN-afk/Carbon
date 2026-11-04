@@ -90,6 +90,7 @@ public final class Carbon {
         public final ModConfigSpec.BooleanValue optimizeDroppedItems;
         public final ModConfigSpec.BooleanValue physicalDroppedItems;
         public final ModConfigSpec.BooleanValue skipVisibilityChecks;
+        public final ModConfigSpec.DoubleValue cacheUpdateBudgetMs;
 
         private Settings() {
             ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -97,6 +98,7 @@ public final class Carbon {
             optimizeDroppedItems = builder.comment("Take over dropped-item models, spin and scale on the GPU. Disable to preserve other mods' dropped-item rendering and transforms.").translation("carbon.configuration.optimizeDroppedItems").define("optimizeDroppedItems", true);
             physicalDroppedItems = builder.comment("Visual-only GPU tumbling and resting dropped items; requires optimizeDroppedItems. Does not change collisions, velocity or pickup.").translation("carbon.configuration.physicalDroppedItems").define("physicalDroppedItems", false);
             skipVisibilityChecks = builder.comment("Skip frustum and Sodium occlusion checks for the dedicated dropped-item pipeline; distance limits still apply.").translation("carbon.configuration.skipVisibilityChecks").define("skipVisibilityChecks", true);
+            cacheUpdateBudgetMs = builder.comment("CPU cache update budget per frame in milliseconds. Keep drawing the previous scene until the queue completes. 0 updates immediately; a single item can exceed the budget.").translation("carbon.configuration.cacheUpdateBudgetMs").defineInRange("cacheUpdateBudgetMs", 2.0, 0.0, 20.0);
             spec = builder.build();
         }
     }

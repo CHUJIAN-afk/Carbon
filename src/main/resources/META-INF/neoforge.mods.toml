@@ -17,7 +17,7 @@ config="carbon.mixins.json"
 [[dependencies.carbon]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.238,21.2)"
+versionRange="[21.1.0,21.2)"
 side="CLIENT"
 
 [[dependencies.carbon]]
