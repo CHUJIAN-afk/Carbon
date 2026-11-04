@@ -25,7 +25,7 @@ public abstract class ItemEntityRendererMixin extends EntityRenderer<ItemEntity>
             cancellable = true
     )
     private void imo$entity(ItemEntity entity, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, CallbackInfo ci) {
-        if (Carbon.DROPPED_RENDERER.submitEntity(entity, partialTick, light)) {
+        if (Carbon.DROPPED_RENDERER.submitEntity(entity, partialTick, light, pose, buffers)) {
             super.render(entity, yaw, partialTick, pose, buffers, light);
             ci.cancel();
         }

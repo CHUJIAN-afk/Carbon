@@ -4,3 +4,4 @@ releases/
 run/
 .idea/
 *.iml
+/release-video/

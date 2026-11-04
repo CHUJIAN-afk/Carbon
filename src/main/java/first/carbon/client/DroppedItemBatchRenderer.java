@@ -288,9 +288,10 @@ public final class DroppedItemBatchRenderer {
         return submitted;
     }
 
-    public boolean submitEntity(ItemEntity entity, float partialTick, int light) {
+    public boolean submitEntity(ItemEntity entity, float partialTick, int light, PoseStack pose, net.minecraft.client.renderer.MultiBufferSource buffers) {
         boolean submitted = false;
-        if (active && !capturing && entity.level() == level && !entity.isCurrentlyGlowing() && !Carbon.IRIS.shadowPass()) {
+        boolean shadow = Carbon.IRIS.shadowPass();
+        if (active && !capturing && entity.level() == level && !entity.isCurrentlyGlowing() && (!shadow || physics)) {
             ItemStack stack = entity.getItem();
             if (stack.isEmpty()) {
                 return false;
@@ -327,11 +328,11 @@ public final class DroppedItemBatchRenderer {
                 batch = find(stack, batch.model, true);
                 cached.batch = batch;
             }
-            if (batch != null && !batch.flushed) {
+            if (batch != null && (shadow || !batch.flushed)) {
                 ((ComponentVersion) stack.getComponents()).imo$track();
                 int count = stack.getCount();
                 int copies = count <= 1 ? 1 : count <= 16 ? 2 : count <= 32 ? 3 : count <= 48 ? 4 : 5;
-                if (batch.count + copies <= 65536) {
+                if (shadow || batch.count + copies <= 65536) {
                     IClientItemExtensions extensions = batch.extensions;
                     boolean spread = extensions == IClientItemExtensions.DEFAULT || extensions.shouldSpreadAsEntity(stack);
                     boolean bob = extensions == IClientItemExtensions.DEFAULT || extensions.shouldBobAsEntity(stack);
@@ -358,14 +359,39 @@ public final class DroppedItemBatchRenderer {
                         }
                         cached.motionTick = level.getGameTime();
                     }
-                    batch.addEntity((float) (Mth.lerp(partialTick, entity.xOld, entity.getX()) - originX),
-                            (float) (Mth.lerp(partialTick, entity.yOld, entity.getY()) - originY)
-                                    + (physics ? ((entity.getId() * 0x9E3779B9) >>> 16) * (0.003f / 65535) : 0),
-                            (float) (Mth.lerp(partialTick, entity.zOld, entity.getZ()) - originZ),
-                            physics ? cached.roll : ageOffset, physics ? -entity.getYRot() : entity.bobOffs, light, bob, spread, copies,
-                            cached.rate);
+                    if (shadow) {
+                        var rotation = new org.joml.Quaternionf().rotationY(-entity.getYRot() * Mth.DEG_TO_RAD);
+                        if (batch.flat) rotation.rotateX((float) (Math.PI / 2));
+                        rotation.rotateY(cached.roll + cached.rate * (clock - (float) Math.floor(clock)));
+                        var matrix = new org.joml.Matrix3f().rotation(rotation);
+                        float height = Math.abs(matrix.m01()) * batch.halfSize.x + Math.abs(matrix.m11()) * batch.halfSize.y + Math.abs(matrix.m21()) * batch.halfSize.z;
+                        var center = rotation.transform(batch.center, new org.joml.Vector3f());
+                        var offset = new org.joml.Vector3f();
+                        capturing = true;
+                        try {
+                            for (int copy = 0; copy < copies; copy++) {
+                                int index = copy * 3;
+                                offset.set(spread ? batch.copyOffsets[index] : 0, spread ? batch.copyOffsets[index + 1] : 0, batch.gui3d && spread ? batch.copyOffsets[index + 2] : 0);
+                                rotation.transform(offset);
+                                offset.y = height + (batch.gui3d ? Math.abs(offset.y) : copy * (height * 2 + 0.002f)) + 0.002f;
+                                offset.sub(center);
+                                pose.pushPose();
+                                pose.translate(offset.x, offset.y + ((entity.getId() * 0x9E3779B9) >>> 16) * (0.003f / 65535), offset.z);
+                                pose.mulPose(rotation);
+                                itemRenderer.render(stack, ItemDisplayContext.GROUND, false, pose, buffers, light, OverlayTexture.NO_OVERLAY, batch.model);
+                                pose.popPose();
+                            }
+                        } finally { capturing = false; }
+                    } else {
+                        batch.addEntity((float) (Mth.lerp(partialTick, entity.xOld, entity.getX()) - originX),
+                                (float) (Mth.lerp(partialTick, entity.yOld, entity.getY()) - originY)
+                                        + (physics ? ((entity.getId() * 0x9E3779B9) >>> 16) * (0.003f / 65535) : 0),
+                                (float) (Mth.lerp(partialTick, entity.zOld, entity.getZ()) - originZ),
+                                physics ? cached.roll : ageOffset, physics ? -entity.getYRot() * Mth.DEG_TO_RAD : entity.bobOffs, light, bob, spread, copies,
+                                cached.rate);
+                        instances += copies;
+                    }
                     batch.lastFrame = frame;
-                    instances += copies;
                     submitted = true;
                 }
             }
@@ -461,7 +487,7 @@ public final class DroppedItemBatchRenderer {
                             lightCells.put(key, light);
                         }
                         if (((EntityCacheAccess) item).imo$hasFire()) light = (light & 0xFFFF0000) | 240;
-                        submitted = submitEntity(item, partialTick, light);
+                        submitted = submitEntity(item, partialTick, light, null, null);
                         if (submitted) {
                             collected++;
                             addShadow(item, partialTick, renderShadows);

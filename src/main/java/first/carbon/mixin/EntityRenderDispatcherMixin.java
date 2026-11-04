@@ -30,11 +30,11 @@ public abstract class EntityRenderDispatcherMixin implements DroppedItemBatchRen
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void imo$direct(Entity entity, double x, double y, double z, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, CallbackInfo ci) {
-        if (entity instanceof ItemEntity item && !renderHitBoxes && !item.hasCustomName() && !item.shouldShowName()
+        if (entity instanceof ItemEntity item && !Carbon.IRIS.shadowPass() && !renderHitBoxes && !item.hasCustomName() && !item.shouldShowName()
                 && !item.displayFireAnimation() && !item.isCurrentlyGlowing()
                 && ((EntityRenderDispatcher) (Object) this).getRenderer(item).getClass() == ItemEntityRenderer.class) {
             var renderer = Carbon.DROPPED_RENDERER;
-            if (renderer.submitEntity(item, partialTick, light)) {
+            if (renderer.submitEntity(item, partialTick, light, pose, buffers)) {
                 renderer.addShadow(item, partialTick, shouldRenderShadow && Minecraft.getInstance().options.entityShadows().get());
                 ci.cancel();
             }
