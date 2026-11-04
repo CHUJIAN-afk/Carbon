@@ -69,8 +69,10 @@ void main() {
     q = carbon_quatMultiply(q, vec4(0,sin(angle * 0.5),0,cos(angle * 0.5)));
     rotation = carbon_matrix(normalize(q));
     float height = dot(abs(vec3(rotation[0].y, rotation[1].y, rotation[2].y)), carbonHalfSize);
-    vec3 spread = rotation * carbon_vector(6u);
-    spread.y = height + max(0.0, spread.y) + 0.002;
+    vec3 copy = carbon_vector(6u);
+    bool pile = copy.z < 0.0;
+    vec3 spread = rotation * vec3(copy.xy, pile ? copy.z + 1.0 : 0.0);
+    spread.y = height + (pile ? abs(spread.y) : copy.z * (height * 2.0 + 0.002)) + 0.002;
     position = rotation * (iris_Position - carbonCenter) + carbon_vector(0u) + spread - carbonCamera;
 #endif
     tangentRotation = rotation;

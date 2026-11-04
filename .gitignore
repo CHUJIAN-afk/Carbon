@@ -5,3 +5,4 @@ run/
 .idea/
 *.iml
 run-forge/
+/release-video/

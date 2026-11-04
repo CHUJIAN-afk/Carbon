@@ -45,6 +45,7 @@ final class GpuDroppedItemBatch implements AutoCloseable {
     final boolean foil;
     final boolean physics;
     final boolean flat;
+    final boolean gui3d;
     final Vector3f center = new Vector3f();
     final Vector3f halfSize = new Vector3f();
     boolean physicsMoving;
@@ -79,7 +80,7 @@ final class GpuDroppedItemBatch implements AutoCloseable {
         physics = entityBatch && renderer.physics;
         instanceStride = entityBatch ? 40 : 144;
         groundScaleY = model.getTransforms().ground.scale.y();
-        boolean gui3d = model.isGui3d();
+        gui3d = model.isGui3d();
         flat = physics || !gui3d;
         copySpacing = gui3d ? 0 : 0.09375f * model.getTransforms().ground.scale.z();
         extensions = IClientItemExtensions.of(stack);
@@ -222,6 +223,7 @@ final class GpuDroppedItemBatch implements AutoCloseable {
         data.putLong(offset + 136, 0);
     }
 
+    // Negative z stores a compact 3D offset; nonnegative z stores the flat-item layer.
     void addEntity(float x, float y, float z, float age, float phase, int light, boolean bob, boolean spread, int copies,
                    float rate) {
         dirty = true;
@@ -238,7 +240,7 @@ final class GpuDroppedItemBatch implements AutoCloseable {
             MemoryUtil.memPutFloat(address + 20, phase);
             MemoryUtil.memPutFloat(address + 24, spread ? copyOffsets[offset] : 0);
             MemoryUtil.memPutFloat(address + 28, spread ? copyOffsets[offset + 1] : 0);
-            MemoryUtil.memPutFloat(address + 32, (copy - center) * copySpacing + (spread ? copyOffsets[offset + 2] : 0));
+            MemoryUtil.memPutFloat(address + 32, physics ? gui3d ? -1 + (spread ? copyOffsets[offset + 2] : 0) : copy : (copy - center) * copySpacing + (spread ? copyOffsets[offset + 2] : 0));
             MemoryUtil.memPutFloat(address + 36, physics ? rate : bob ? 1 : 0);
             address += instanceStride;
         }
