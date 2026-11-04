@@ -64,6 +64,7 @@ public final class Carbon {
         public final ModConfigSpec.BooleanValue optimizeDroppedItems;
         public final ModConfigSpec.BooleanValue physicalDroppedItems;
         public final ModConfigSpec.BooleanValue skipVisibilityChecks;
+        public final ModConfigSpec.DoubleValue cacheUpdateBudgetMs;
 
         private Settings() {
             ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -71,6 +72,7 @@ public final class Carbon {
             optimizeDroppedItems = builder.translation("carbon.configuration.optimizeDroppedItems").define("optimizeDroppedItems", true);
             physicalDroppedItems = builder.translation("carbon.configuration.physicalDroppedItems").define("physicalDroppedItems", false);
             skipVisibilityChecks = builder.comment("Submit batched items without vanilla frustum or Sodium visibility checks; distance limits still apply.").translation("carbon.configuration.skipVisibilityChecks").define("skipVisibilityChecks", true);
+            cacheUpdateBudgetMs = builder.comment("CPU cache update budget per frame in milliseconds. 0 updates immediately; a single item can exceed the budget.").translation("carbon.configuration.cacheUpdateBudgetMs").defineInRange("cacheUpdateBudgetMs", 2.0, 0.0, 20.0);
             spec = builder.build();
         }
     }

@@ -13,4 +13,8 @@ public abstract class ClientLevelMixin {
     private void imo$changed(CallbackInfo ci) {
         Carbon.RENDERER.sceneDirty = true;
     }
+    @Inject(method = {"sendBlockUpdated", "onChunkLoaded", "unload"}, at = @At("HEAD"))
+    private void imo$blockChanged(CallbackInfo ci) {
+        Carbon.RENDERER.blockCacheDirty = true;
+    }
 }

@@ -26,6 +26,9 @@ final class GpuShadowBatch implements AutoCloseable {
     private final int buffer;
     private ByteBuffer data;
     private ByteBuffer previous;
+    private ByteBuffer updateData;
+    int updateCount;
+    int updateCapacity;
     private int capacity;
     private int gpuCapacity;
     private int uploadedCount;
@@ -88,7 +91,9 @@ final class GpuShadowBatch implements AutoCloseable {
                             if (count == capacity) {
                                 capacity = Math.max(64, capacity * 2);
                                 data = data == null ? MemoryUtil.memAlloc(capacity * 48) : MemoryUtil.memRealloc(data, capacity * 48);
-                                previous = previous == null ? MemoryUtil.memAlloc(capacity * 48) : MemoryUtil.memRealloc(previous, capacity * 48);
+                                if (previous == null || previous.capacity() < capacity * 48) {
+                                    previous = previous == null ? MemoryUtil.memAlloc(capacity * 48) : MemoryUtil.memRealloc(previous, capacity * 48);
+                                }
                             }
                             AABB bounds = receiver.bounds;
                             long address = MemoryUtil.memAddress(data) + count++ * 48L;
@@ -109,6 +114,19 @@ final class GpuShadowBatch implements AutoCloseable {
                 }
             }
         }
+    }
+
+    void swapUpdate() {
+        ByteBuffer data = this.data;
+        this.data = updateData;
+        updateData = data;
+        int count = this.count;
+        this.count = updateCount;
+        updateCount = count;
+        int capacity = this.capacity;
+        this.capacity = updateCapacity;
+        updateCapacity = capacity;
+        dirty = true;
     }
 
     long draw(net.minecraft.client.renderer.state.level.CameraRenderState cameraState, GpuFrame frame) {
@@ -150,8 +168,14 @@ final class GpuShadowBatch implements AutoCloseable {
         glDeleteBuffers(buffer);
         if (data != null) {
             MemoryUtil.memFree(data);
-            MemoryUtil.memFree(previous);
             data = null;
+        }
+        if (updateData != null) {
+            MemoryUtil.memFree(updateData);
+            updateData = null;
+        }
+        if (previous != null) {
+            MemoryUtil.memFree(previous);
             previous = null;
         }
         receivers.clear();

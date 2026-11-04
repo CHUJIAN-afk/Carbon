@@ -1,6 +1,6 @@
 # Carbon（碳）
 
-Minecraft 26.1.2 / NeoForge 26.1.2.108 客户端 GPU 物品模型渲染优化模组，Java 25，MIT 许可证。
+Minecraft 26.1.2 / NeoForge 26.1.2 系列（构建使用 26.1.2.108） 客户端 GPU 物品模型渲染优化模组，Java 25，MIT 许可证。
 
 ![Carbon](branding/mod-cover.svg)
 
@@ -17,12 +17,15 @@ enabled = true
 optimizeDroppedItems = true
 physicalDroppedItems = false
 skipVisibilityChecks = true
+cacheUpdateBudgetMs = 2.0
 ```
 
 - `enabled`：优化总开关。
 - `optimizeDroppedItems`：默认开启掉落物专用 GPU 管线；关闭后保留原有掉落物变换，通过标准模型提交继续优化。
 - `physicalDroppedItems`：默认关闭，需要开启掉落物专用管线；落地姿态收稳后停止派发变换计算。
 - `skipVisibilityChecks`：专用管线默认跳过遮挡与视锥检查，完整提交距离内的普通掉落物；距离限制始终有效。
+
+- `cacheUpdateBudgetMs`：每帧缓存更新预算，默认 2 毫秒，可设为 0–20 毫秒，0 表示立即完成；队列完成前绘制旧实例与阴影。单个物品更新可能超预算。
 
 `/carbon enabled false` 停用优化，`/carbon stats` 查看统计。新配置尚不存在时会迁移旧客户端配置；升级时替换旧 Jar。
 
@@ -32,6 +35,6 @@ Iris 检测集中在 `IrisCompatibility`。本分支的新 RenderPipeline 与 1.
 
 ## 验证与构建
 
-各分支的最终测试报告统一保存在 [主分支 BENCHMARK.md](https://github.com/CHUJIAN-afk/Carbon/blob/master/BENCHMARK.md)，本分支不保留测试过程文件。
+各分支的最终测试报告统一保存在 [主分支 0.8 多版本报告](https://github.com/CHUJIAN-afk/Carbon/blob/master/benchmark/ports-0.8/README.md)，本分支不保留测试过程文件。
 
-[更新记录](CHANGELOG.md)。使用 Java 25 执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.7.jar`。
+[更新记录](CHANGELOG.md)。使用 Java 25 执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.8.jar`。

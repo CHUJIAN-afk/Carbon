@@ -2,6 +2,7 @@ package first.carbon.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import first.carbon.Carbon;
+import first.carbon.client.ItemBatchRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,9 +20,27 @@ public abstract class EntitySceneMixin {
         }
     }
 
+    @Inject(method = "setYRot", at = @At("HEAD"))
+    private void imo$rotation(float yRot, CallbackInfo ci) {
+        if ((Object) this instanceof ItemEntity item && RenderSystem.isOnRenderThread()
+                && Carbon.CONFIG.physicalDroppedItems.get() && item.getYRot() != yRot) {
+            Carbon.RENDERER.sceneDirty = true;
+        }
+    }
+
     @Inject(method = "onSyncedDataUpdated(Lnet/minecraft/network/syncher/EntityDataAccessor;)V", at = @At("HEAD"))
     private void imo$changed(CallbackInfo ci) {
         if ((Object) this instanceof ItemEntity && RenderSystem.isOnRenderThread()) {
+            ((ItemBatchRenderer.EntityCacheAccess) this).imo$invalidate();
+            Carbon.RENDERER.sceneDirty = true;
+        }
+    }
+
+    @Inject(method = "setRemainingFireTicks", at = @At("HEAD"))
+    private void imo$fire(int fireTicks, CallbackInfo ci) {
+        if ((Object) this instanceof ItemEntity item && RenderSystem.isOnRenderThread()
+                && (item.getRemainingFireTicks() > 0) != (fireTicks > 0)) {
+            ((ItemBatchRenderer.EntityCacheAccess) this).imo$invalidate();
             Carbon.RENDERER.sceneDirty = true;
         }
     }

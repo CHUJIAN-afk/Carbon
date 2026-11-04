@@ -12,5 +12,6 @@ public abstract class ClientChunkCacheMixin {
     @Inject(method = "onLightUpdate", at = @At("HEAD"))
     private void imo$light(CallbackInfo ci) {
         Carbon.RENDERER.sceneDirty = true;
+        Carbon.RENDERER.blockCacheDirty = true;
     }
 }
