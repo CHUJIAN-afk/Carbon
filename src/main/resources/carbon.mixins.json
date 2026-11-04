@@ -16,7 +16,12 @@
     "ClientChunkCacheMixin",
     "ItemFeatureRendererMixin",
     "ItemStackFoilMixin",
-    "ShadowFeatureRendererMixin"
+    "ShadowFeatureRendererMixin",
+    "GlStateManagerMixin",
+    "GlCommandEncoderMixin",
+    "RenderTypeAccessor",
+    "RenderSetupAccessor",
+    "IrisShadowRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

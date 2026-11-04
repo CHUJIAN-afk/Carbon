@@ -22,7 +22,7 @@ public final class GenericShadowRenderer {
 
     public List<SubmitNodeStorage.ShadowSubmit> collect(List<SubmitNodeStorage.ShadowSubmit> submissions) {
         count = 0;
-        if (failed || !Carbon.CONFIG.enabled.get() || !Carbon.IRIS.canInstance() || RenderSystem.getProjectionMatrixBuffer() == null
+        if (failed || !Carbon.CONFIG.enabled.get() || Carbon.IRIS.active() || RenderSystem.getProjectionMatrixBuffer() == null
                 || !(net.minecraft.client.Minecraft.getInstance().getMainRenderTarget().getColorTexture() instanceof com.mojang.blaze3d.opengl.GlTexture)
                 || RenderSystem.getShaderFog() == null || !org.lwjgl.opengl.GL.getCapabilities().OpenGL33) return submissions;
         if (program == 0 && submissions.stream().anyMatch(submit -> submit.radius() == 0.15f)) {

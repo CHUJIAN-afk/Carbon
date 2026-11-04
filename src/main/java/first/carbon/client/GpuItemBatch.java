@@ -1,6 +1,9 @@
 package first.carbon.client;
 
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.systems.RenderSystem;
+import first.carbon.Carbon;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -50,7 +53,7 @@ final class GpuItemBatch implements AutoCloseable {
     boolean processed;
     int retainedCount;
 
-    GpuItemBatch(ItemStack stack, ItemStackRenderState state, ItemBatchRenderer renderer, boolean entityBatch) {
+    GpuItemBatch(ItemStack stack, ItemStackRenderState state, ItemBatchRenderer renderer, boolean entityBatch, net.minecraft.client.renderer.SubmitNodeStorage.ItemSubmit submit) {
         this.stack = stack.copy();
         this.model = List.copyOf(((ItemBatchRenderer.ItemStateAccess) state).imo$identity());
         this.entityBatch = entityBatch;
@@ -76,6 +79,7 @@ final class GpuItemBatch implements AutoCloseable {
         QuadInstance instance = new QuadInstance();
         org.joml.Vector3f minimum = new org.joml.Vector3f(Float.POSITIVE_INFINITY), maximum = new org.joml.Vector3f(Float.NEGATIVE_INFINITY);
         renderer.capturing = true;
+        int[] captured = entityBatch ? Carbon.IRIS.capture(null) : null;
         try {
             SubmitNodeCollector collector = (SubmitNodeCollector) Proxy.newProxyInstance(SubmitNodeCollector.class.getClassLoader(), new Class<?>[]{SubmitNodeCollector.class}, (proxy, method, args) -> {
                 if (method.getName().equals("order")) return proxy;
@@ -96,7 +100,7 @@ final class GpuItemBatch implements AutoCloseable {
                             || !pipeline.getFragmentShader().equals(Identifier.withDefaultNamespace("core/item"))) {
                         throw new IllegalArgumentException("Custom item shader");
                     }
-                    Material key = new Material(material.sprite().atlasLocation(), pipeline.isCull());
+                    Material key = new Material(material.sprite().atlasLocation(), pipeline.isCull(), Carbon.IRIS.active() ? material.itemRenderType() : null);
                     BufferBuilder builder = builders.computeIfAbsent(key, ignored -> {
                         ByteBufferBuilder allocator = new ByteBufferBuilder(4096);
                         allocators.put(key, allocator);
@@ -104,25 +108,27 @@ final class GpuItemBatch implements AutoCloseable {
                     });
                     instance.setColor(material.tintIndex() >= 0 && material.tintIndex() < tints.length ? tints[material.tintIndex()] : -1);
                     instance.setLightCoords(0);
-                    instance.setOverlayCoords(unlit ? 0 : 65537);
+                    instance.setOverlayCoords(Carbon.IRIS.active() ? OverlayTexture.NO_OVERLAY : unlit ? 0 : 65537);
                     builder.putBakedQuad(pose, quad, instance);
                 }
                 return null;
             });
-            state.submit(new PoseStack(), collector, 0, OverlayTexture.NO_OVERLAY, 0);
+            if (submit == null) state.submit(new PoseStack(), collector, 0, OverlayTexture.NO_OVERLAY, 0);
+            else collector.submitItem(new PoseStack(), submit.displayContext(), 0, OverlayTexture.NO_OVERLAY, 0, submit.tintLayers(), submit.quads(), submit.foilType());
             for (var entry : builders.entrySet()) {
                 try (MeshData mesh = entry.getValue().build()) {
                     if (mesh != null) {
                         ByteBuffer vertices = mesh.vertexBuffer();
+                        int stride = mesh.drawState().format().getVertexSize();
                         for (int i = 0; i < mesh.drawState().vertexCount(); i++) {
                             if (physics) {
-                                org.joml.Vector3f point = new org.joml.Vector3f(vertices.getFloat(i * 36), vertices.getFloat(i * 36 + 4), vertices.getFloat(i * 36 + 8));
+                                org.joml.Vector3f point = new org.joml.Vector3f(vertices.getFloat(i * stride), vertices.getFloat(i * stride + 4), vertices.getFloat(i * stride + 8));
                                 minimum.min(point); maximum.max(point);
                             }
-                            int alpha = vertices.get(i * 36 + 15) & 255;
+                            int alpha = vertices.get(i * stride + 15) & 255;
                             if (alpha != 0 && alpha != 255) throw new IllegalArgumentException("Translucent vertex color");
                         }
-                        Mesh part = new Mesh(entry.getKey().texture, entry.getKey().cull, vertices, mesh.drawState().vertexCount());
+                        Mesh part = new Mesh(entry.getKey().texture, entry.getKey().cull, entry.getKey().type, vertices, mesh.drawState().format(), mesh.drawState().vertexCount());
                         meshes.add(part);
                         meshBytes += vertices.remaining() + part.indices * 4L;
                     }
@@ -135,6 +141,7 @@ final class GpuItemBatch implements AutoCloseable {
             throw exception;
         } finally {
             renderer.capturing = false;
+            Carbon.IRIS.restore(captured);
             for (ByteBufferBuilder allocator : allocators.values()) allocator.close();
             glBindVertexArray(vao);
             glBindBuffer(GL_ARRAY_BUFFER, buffer);
@@ -266,27 +273,32 @@ final class GpuItemBatch implements AutoCloseable {
         }
     }
 
-    private record Material(Identifier texture, boolean cull) {}
+    private record Material(Identifier texture, boolean cull, net.minecraft.client.renderer.rendertype.RenderType type) {}
 
     final class Mesh implements AutoCloseable {
         final Identifier texture;
         final boolean cull;
+        final net.minecraft.client.renderer.rendertype.RenderType type;
+        final VertexFormat format;
+        final GpuBuffer vertices;
         final int vao;
         final int vertexBuffer;
         final int indexBuffer;
         final int indices;
         private int boundInstances;
 
-        Mesh(Identifier texture, boolean cull, ByteBuffer vertices, int vertexCount) {
+        Mesh(Identifier texture, boolean cull, net.minecraft.client.renderer.rendertype.RenderType type, ByteBuffer vertices, VertexFormat format, int vertexCount) {
             this.texture = texture;
             this.cull = cull;
+            this.type = type;
+            this.format = format;
             vao = glGenVertexArrays();
-            vertexBuffer = glGenBuffers();
+            this.vertices = RenderSystem.getDevice().createBuffer(() -> "Carbon item mesh", GpuBuffer.USAGE_VERTEX, vertices);
+            vertexBuffer = ((ItemBatchRenderer.BufferAccess) this.vertices).imo$handle();
             indexBuffer = glGenBuffers();
             indices = vertexCount / 4 * 6;
             glBindVertexArray(vao);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-            glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
             bindVertices();
             for (int attribute = 0; attribute < 6; attribute++) {
                 glEnableVertexAttribArray(attribute);
@@ -341,18 +353,20 @@ final class GpuItemBatch implements AutoCloseable {
         }
 
         private void bindVertices() {
-            glVertexAttribPointer(0, 3, GL_FLOAT, false, 36, 0);
-            glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true, 36, 12);
-            glVertexAttribPointer(2, 2, GL_FLOAT, false, 36, 16);
-            glVertexAttribIPointer(3, 2, GL_SHORT, 36, 24);
-            glVertexAttribIPointer(4, 2, GL_SHORT, 36, 28);
-            glVertexAttribPointer(5, 3, GL_BYTE, true, 36, 32);
+            int stride = format.getVertexSize();
+            glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
+            glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true, stride, 12);
+            glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, 16);
+            glVertexAttribIPointer(3, 2, GL_SHORT, stride, 24);
+            glVertexAttribIPointer(4, 2, GL_SHORT, stride, 28);
+            glVertexAttribPointer(5, 3, GL_BYTE, true, stride, 32);
         }
 
         @Override
         public void close() {
             glDeleteVertexArrays(vao);
-            glDeleteBuffers(vertexBuffer);
+            Carbon.IRIS.releaseMesh(vertexBuffer);
+            vertices.close();
             glDeleteBuffers(indexBuffer);
         }
     }

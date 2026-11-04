@@ -39,6 +39,7 @@ public final class ItemBatchRenderer {
     private final Long2IntOpenHashMap lightCells = new Long2IntOpenHashMap();
     private final BlockPos.MutableBlockPos lightPosition = new BlockPos.MutableBlockPos();
     private final List<Entity> remaining = new ArrayList<>();
+    private final List<Entity> shadowRemaining = new ArrayList<>();
     private final List<ItemEntity> updateQueue = new ArrayList<>();
     private Set<ItemEntity> remainingItems = Collections.newSetFromMap(new IdentityHashMap<>());
     private Set<ItemEntity> updateRemainingItems = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -54,10 +55,12 @@ public final class ItemBatchRenderer {
     private Frustum frustum;
     private float partialTick, clock;
     private int ticks, frame, generation, program, entityProgram, preparedProgram, framebuffer;
+    private int irisGeneration;
     private double originX, originY, originZ;
     private GpuInstanceProcessor processor;
     private GpuShadowBatch shadows;
     private boolean active, failed, reused, stationary, sceneValid, sceneShadows, sceneSkip;
+    private boolean shadowCollected, shadowFlushed;
     private long sceneTick, builds, reuses;
     private int sceneSkyDarken, sceneRenderDistance;
     private double sceneDistanceMargin, sceneViewScale, sceneEntityDistance;
@@ -73,6 +76,12 @@ public final class ItemBatchRenderer {
     public long uploadedBytes, modelBytes;
 
     public void beginFrame(Camera camera, Frustum frustum, float partialTick) {
+        Carbon.IRIS.beginFrame();
+        if (irisGeneration != Carbon.IRIS.generation) {
+            clear();
+            Carbon.GENERIC.invalidate();
+            irisGeneration = Carbon.IRIS.generation;
+        }
         var minecraft = Minecraft.getInstance();
         boolean requested = Carbon.CONFIG.optimizeDroppedItems.get();
         boolean physical = requested && Carbon.CONFIG.physicalDroppedItems.get();
@@ -95,6 +104,7 @@ public final class ItemBatchRenderer {
         instances = collected = drawCalls = cacheMisses = shadowDrawCalls = 0;
         uploadedBytes = modelBytes = cacheUpdateNs = 0;
         updatedEntities = 0;
+        shadowCollected = shadowFlushed = false;
         active = false;
         if (!failed && Carbon.IRIS.canInstance() && Carbon.CONFIG.enabled.get() && minecraft.getMainRenderTarget().getColorTexture() instanceof GlTexture && GL.getCapabilities().OpenGL33) {
             if (program == 0) {
@@ -120,7 +130,7 @@ public final class ItemBatchRenderer {
             }
             active = !failed && program != 0;
         }
-        boolean shadowOption = minecraft.options.entityShadows().get();
+        boolean shadowOption = minecraft.options.entityShadows().get() && !Carbon.IRIS.active();
         boolean skip = Carbon.CONFIG.skipVisibilityChecks.get();
         if (updating && (!position.equals(sceneCamera) || !visibilityMatrix.equals(sceneMatrix))) sceneDirty = true;
         reused = active && dedicated && skip == sceneSkip && sceneValid && stationary && !sceneDirty && !blockCacheDirty
@@ -170,7 +180,7 @@ public final class ItemBatchRenderer {
         var dispatcher = minecraft.getEntityRenderDispatcher();
         boolean starting = !updating;
         boolean skip = updating ? sceneSkip : Carbon.CONFIG.skipVisibilityChecks.get();
-        boolean renderShadows = updating ? sceneShadows : minecraft.options.entityShadows().get();
+        boolean renderShadows = updating ? sceneShadows : minecraft.options.entityShadows().get() && !Carbon.IRIS.active();
         boolean rendererChecked = false, standardRenderer = false;
         if (starting) {
             updating = true;
@@ -277,6 +287,8 @@ public final class ItemBatchRenderer {
                     instances += copies;
                     collected++;
                     submitted = true;
+                    cache.previousBuild = cache.sceneBuild;
+                    cache.sceneBuild = builds + 1;
                     updateTickStable &= !cache.dynamicFoil;
                     updateStationary &= item.xOld == item.getX() && item.yOld == item.getY() && item.zOld == item.getZ()
                             && (!physics || cache.rate == 0)
@@ -323,6 +335,48 @@ public final class ItemBatchRenderer {
         return remaining;
     }
 
+    public Iterable<Entity> collectShadows(Iterable<Entity> entities) {
+        if (!active || !dedicated || !sceneValid || !Carbon.IRIS.canInstance()) return entities;
+        shadowCollected = true;
+        shadowRemaining.clear();
+        for (Entity entity : entities) {
+            boolean cached = false;
+            if (entity instanceof ItemEntity item) {
+                EntityCache cache = ((EntityCacheAccess) item).imo$cache();
+                cached = cache.generation == generation && (cache.sceneBuild == builds || cache.previousBuild == builds);
+            }
+            if (!cached) shadowRemaining.add(entity);
+        }
+        return shadowRemaining;
+    }
+
+    public void drawIrisShadows() {
+        if (shadowCollected && !shadowFlushed && Carbon.IRIS.shadowPass()) {
+            drawIris(Carbon.IRIS.shadowView(), camera, true);
+            shadowFlushed = true;
+        }
+    }
+
+    private void drawIris(org.joml.Matrix4fc matrix, Vec3 position, boolean shadow) {
+        var view = RenderSystem.getModelViewStack();
+        view.pushMatrix();
+        view.set(matrix);
+        try {
+            var offset = new org.joml.Vector3f((float) (position.x - originX), (float) (position.y - originY), (float) (position.z - originZ));
+            for (var bucket : buckets.values()) for (var batch : bucket) if (batch.count > 0 && !batch.flushed) {
+                Carbon.SODIUM.mark(batch.sprites);
+                uploadedBytes += batch.upload();
+                for (int pass = 0; pass < (batch.foil && !shadow ? 2 : 1); pass++) for (var mesh : batch.meshes) {
+                    var type = pass == 0 ? mesh.type : net.minecraft.client.renderer.feature.ItemFeatureRenderer.getFoilRenderType(mesh.type, true);
+                    Carbon.IRIS.draw(type, mesh.vertices, mesh.vertexBuffer, mesh.indexBuffer, mesh.format, mesh.indices,
+                            batch.count, batch.instanceBuffer, batch.physics ? 4 : 3, offset, clock, batch.groundScaleY, batch.center, batch.halfSize);
+                    if (!shadow) drawCalls++;
+                }
+                if (!shadow) batch.flushed = true;
+            }
+        } finally { view.popMatrix(); }
+    }
+
     private GpuItemBatch find(ItemStack stack, ItemStackRenderState state, boolean entity) {
         if (stack.isEmpty() || state.isEmpty()) return null;
         var identity = ((ItemStateAccess) state).imo$identity();
@@ -330,7 +384,7 @@ public final class ItemBatchRenderer {
         var bucket = buckets.computeIfAbsent(hash, key -> new ArrayList<>());
         for (var batch : bucket) if (!batch.closed && batch.entityBatch == entity && batch.model.equals(identity) && ItemStack.isSameItemSameComponents(batch.stack, stack)) return batch;
         try {
-            var batch = new GpuItemBatch(stack, state, this, entity);
+            var batch = new GpuItemBatch(stack, state, this, entity, null);
             bucket.add(batch);
             cacheMisses++;
             modelBytes += batch.meshBytes;
@@ -342,7 +396,9 @@ public final class ItemBatchRenderer {
 
     public void flush(CameraRenderState state) {
         if (active) {
-            try (GpuFrame gpuFrame = new GpuFrame(framebuffer)) {
+            if (Carbon.IRIS.active()) {
+                drawIris(state.viewRotationMatrix, state.pos, false);
+            } else try (GpuFrame gpuFrame = new GpuFrame(framebuffer)) {
                 for (var bucket : buckets.values()) for (var batch : bucket) if (batch.count > 0 && !batch.flushed) {
                     Carbon.SODIUM.mark(batch.sprites);
                     uploadedBytes += batch.upload();
@@ -456,6 +512,7 @@ public final class ItemBatchRenderer {
         program = entityProgram = preparedProgram = framebuffer = 0;
         updateQueue.clear();
         remaining.clear();
+        shadowRemaining.clear();
         remainingItems.clear();
         updateRemainingItems.clear();
         lightCells.clear();
@@ -498,6 +555,7 @@ public final class ItemBatchRenderer {
         private GpuItemBatch batch;
         private int generation = -1;
         private long motionTick = Long.MIN_VALUE;
+        private long sceneBuild, previousBuild;
         private float roll, rate;
     }
 }

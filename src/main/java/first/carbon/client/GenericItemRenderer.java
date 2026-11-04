@@ -30,16 +30,22 @@ public final class GenericItemRenderer {
     private int frame, program, framebuffer;
     private long meshBytes;
     private boolean active, failed;
+    private int irisGeneration;
     public int instances, drawCalls;
     public long totalInstances, totalDraws;
 
     public void begin() {
-        active = !failed && Carbon.CONFIG.enabled.get() && Carbon.IRIS.canInstance()
+        if (irisGeneration != Carbon.IRIS.generation) {
+            invalidate();
+            irisGeneration = Carbon.IRIS.generation;
+        }
+        active = !failed && Carbon.CONFIG.enabled.get() && Carbon.IRIS.canInstance() && Carbon.IRIS.canSubmit()
                 && Minecraft.getInstance().getMainRenderTarget().getColorTexture() instanceof com.mojang.blaze3d.opengl.GlTexture
                 && GL.getCapabilities().OpenGL33 && RenderSystem.getProjectionMatrixBuffer() != null && RenderSystem.getShaderFog() != null;
+        if (active && Carbon.IRIS.active()) Carbon.RENDERER.drawIrisShadows();
         frame = Minecraft.getInstance().gui.getGuiTicks();
         instances = drawCalls = 0;
-        if (active && program == 0) {
+        if (active && !Carbon.IRIS.active() && program == 0) {
             try {
                 program = Carbon.RENDERER.createProgram("generic_instanced.vsh", "generic_instanced.fsh");
                 glUniformBlockBinding(program, glGetUniformBlockIndex(program, "Projection"), 4);
@@ -66,31 +72,48 @@ public final class GenericItemRenderer {
     public boolean submit(SubmitNodeStorage.ItemSubmit submit) {
         if (!active || submit.outlineColor() != 0 || submit.overlayCoords() != OverlayTexture.NO_OVERLAY
                 || submit.foilType() == ItemStackRenderState.FoilType.SPECIAL || submit.quads().isEmpty()) return false;
-        Key key = new Key(List.copyOf(submit.quads()), new IntArrayList(submit.tintLayers()), submit.foilType());
-        GpuItemBatch batch = meshes.get(key);
-        if (batch == null) {
-            if (meshes.size() >= 256 || meshBytes >= 67108864) return false;
-            ItemStackRenderState state = new ItemStackRenderState();
-            var layer = state.newLayer();
-            layer.prepareQuadList().addAll(submit.quads());
-            for (int tint : submit.tintLayers()) layer.tintLayers().add(tint);
-            layer.setFoilType(submit.foilType());
-            try {
-                batch = new GpuItemBatch(new ItemStack(Items.STONE), state, Carbon.RENDERER, false);
-                meshes.put(key, batch);
-                meshBytes += batch.meshBytes;
-            } catch (RuntimeException ignored) { return false; }
-        }
-        if (batch.count >= 65536) return false;
-        batch.add(submit.pose().pose(), submit.pose().normal(), 0, 0, false, submit.lightCoords(), false, 0, 0, 0);
-        batch.lastFrame = frame;
-        instances++; totalInstances++;
-        return true;
+        int[] captured = Carbon.IRIS.capture(submit);
+        try {
+            Key key = new Key(List.copyOf(submit.quads()), new IntArrayList(submit.tintLayers()), submit.foilType(), Carbon.IRIS.identifiers());
+            GpuItemBatch batch = meshes.get(key);
+            if (batch == null) {
+                if (meshes.size() >= 256 || meshBytes >= 67108864) return false;
+                ItemStackRenderState state = new ItemStackRenderState();
+                var layer = state.newLayer();
+                layer.prepareQuadList().addAll(submit.quads());
+                for (int tint : submit.tintLayers()) layer.tintLayers().add(tint);
+                layer.setFoilType(submit.foilType());
+                try {
+                    batch = new GpuItemBatch(new ItemStack(Items.STONE), state, Carbon.RENDERER, false, submit);
+                    meshes.put(key, batch);
+                    meshBytes += batch.meshBytes;
+                } catch (RuntimeException ignored) { return false; }
+            }
+            if (batch.count >= 65536) return false;
+            batch.add(submit.pose().pose(), submit.pose().normal(), 0, 0, false, submit.lightCoords(), false, 0, 0, 0);
+            batch.lastFrame = frame;
+            instances++; totalInstances++;
+            return true;
+        } finally { Carbon.IRIS.restore(captured); }
     }
 
     public void flush() {
         if (active && instances != 0) {
-            try (GpuFrame gpu = new GpuFrame(framebuffer, true); MemoryStack memory = MemoryStack.stackPush()) {
+            if (Carbon.IRIS.active()) {
+                var zero = new org.joml.Vector3f();
+                for (GpuItemBatch batch : meshes.values()) if (batch.count != 0) {
+                    Carbon.SODIUM.mark(batch.sprites);
+                    batch.upload();
+                    for (int pass = 0; pass < (batch.foil ? 2 : 1); pass++) for (var mesh : batch.meshes) {
+                        var type = pass == 0 ? mesh.type : ItemFeatureRenderer.getFoilRenderType(mesh.type, true);
+                        if (pass == 0 || !Carbon.IRIS.shadowPass()) {
+                            Carbon.IRIS.draw(type, mesh.vertices, mesh.vertexBuffer, mesh.indexBuffer, mesh.format, mesh.indices,
+                                    batch.count, batch.instanceBuffer, 0, zero, 0, 0, batch.center, batch.halfSize);
+                            drawCalls++; totalDraws++;
+                        }
+                    }
+                }
+            } else try (GpuFrame gpu = new GpuFrame(framebuffer, true); MemoryStack memory = MemoryStack.stackPush()) {
                 var scissor = RenderSystem.getScissorStateForRenderTypeDraws();
                 if (scissor.enabled()) { glEnable(GL_SCISSOR_TEST); glScissor(scissor.x(), scissor.y(), scissor.width(), scissor.height()); }
                 glUseProgram(program);
@@ -141,5 +164,5 @@ public final class GenericItemRenderer {
         active = failed = false;
     }
 
-    private record Key(List<BakedQuad> quads, IntList tints, ItemStackRenderState.FoilType foil) { }
+    private record Key(List<BakedQuad> quads, IntList tints, ItemStackRenderState.FoilType foil, long identifiers) { }
 }
