@@ -177,6 +177,7 @@ public final class ItemBatchRenderer {
         Minecraft minecraft = Minecraft.getInstance();
         if (world && shadows != null && !shadows.flushed && Carbon.CONFIG.enabled.get()
                 && buffers == minecraft.renderBuffers().bufferSource() && entity.getClass() == ItemEntity.class
+                && minecraft.level.getEntity(entity.getId()) == entity
                 && minecraft.getEntityRenderDispatcher().getRenderer(entity).getClass() == ItemEntityRenderer.class) {
             shadows.add(entity, partialTick, strength, originX, originY, originZ);
             shadowInstances = shadows.count;
