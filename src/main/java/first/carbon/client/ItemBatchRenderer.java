@@ -268,15 +268,10 @@ public final class ItemBatchRenderer {
                         if (cache.motionTick != Long.MIN_VALUE) cache.roll = (cache.roll + cache.rate * Math.min(20, level.getGameTime() - cache.motionTick)) % (float) (Math.PI * 2);
                         double dx = item.getX() - item.xOld, dy = item.getY() - item.yOld, dz = item.getZ() - item.zOld;
                         double speed = dx * dx + dy * dy + dz * dz;
-                        cache.rate = speed > 1.0E-8 ? (float) Math.min(0.8, Math.sqrt(speed) * 4) : 0;
+                        cache.rate = !item.onGround() && speed > 1.0E-8 ? (float) Math.min(0.8, Math.sqrt(speed) * 4) : 0;
                         if (item.isInWater()) cache.rate *= 0.35f;
                         if (item.isInLava()) cache.rate *= 0.15f;
-                        if (cache.rate == 0) {
-                            float target = Math.round(cache.roll / (float) Math.PI) * (float) Math.PI;
-                            float remaining = target - cache.roll;
-                            if (Math.abs(remaining) > 0.001f) cache.rate = remaining * 0.35f;
-                            else cache.roll = target;
-                        }
+                        if (item.onGround() && !batch.gui3d) cache.roll = 0;
                         cache.motionTick = level.getGameTime();
                     }
                     batch.addEntity((float) (Mth.lerp(partialTick, item.xOld, item.getX()) - originX),
