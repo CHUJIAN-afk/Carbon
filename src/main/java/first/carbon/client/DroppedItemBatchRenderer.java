@@ -75,7 +75,7 @@ public final class DroppedItemBatchRenderer {
     private int updateIndex, updateInstances, updateCollected;
     private double updateDistanceMargin;
     private float partialTick;
-    public boolean collecting;
+    private List<?> sceneEntities;
     public int collected;
     public volatile boolean sceneDirty = true;
     public volatile boolean blockCacheDirty = true;
@@ -252,7 +252,6 @@ public final class DroppedItemBatchRenderer {
             instances = sceneInstances;
             collected = sceneCollected;
         }
-        if (sceneReused) sceneReuses++;
         if (shadows != null) {
             if (!sceneValid) shadows.retainedCount = 0;
             shadows.count = retained ? shadows.retainedCount : 0;
@@ -415,7 +414,15 @@ public final class DroppedItemBatchRenderer {
         var minecraft = Minecraft.getInstance();
         var dispatcher = minecraft.getEntityRenderDispatcher();
         if (dispatcher.shouldRenderHitBoxes() || Carbon.Client.IRIS.shadowPass()) return entities;
-        if (sceneReused) return remainingView;
+        if ((entities instanceof List<?> || sceneEntities != null) && !entities.equals(sceneEntities)) {
+            sceneReused = false;
+            updating = false;
+            updateQueue.clear();
+        }
+        if (sceneReused) {
+            sceneReuses++;
+            return remainingView;
+        }
         long start = System.nanoTime();
         long budget = (long) (Carbon.CONFIG.cacheUpdateBudgetMs.get() * 1_000_000);
         boolean starting = !updating;
@@ -424,6 +431,7 @@ public final class DroppedItemBatchRenderer {
         boolean renderShadows = updating ? sceneShadows : minecraft.options.entityShadows().get() && ((ShadowSettings) dispatcher).imo$shadows();
         boolean skipVisibility = updating ? sceneSkipVisibilityChecks : Carbon.CONFIG.skipVisibilityChecks.get();
         if (starting) {
+            sceneEntities = entities instanceof List<?> list ? list : null;
             updating = true;
             updateIndex = updateInstances = updateCollected = 0;
             updateStationary = updateTickStable = true;
@@ -771,7 +779,7 @@ public final class DroppedItemBatchRenderer {
         updating = false;
         pendingUpdates = updateIndex = 0;
         sceneInstances = sceneCollected = 0;
-        collecting = false;
+        sceneEntities = null;
         sceneValid = false;
         sceneCameraEntity = null;
         sceneDirty = true;

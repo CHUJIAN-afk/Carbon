@@ -10,21 +10,17 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
-    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"))
-    private Iterable<Entity> imo$entities(ClientLevel level) {
-        var renderer = Carbon.Client.DROPPED_RENDERER;
-        renderer.collecting = Carbon.CONFIG.optimizeDroppedItems.get();
-        try {
-            return level.entitiesForRendering();
-        } finally {
-            renderer.collecting = false;
-        }
+    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"))
+    private Iterable<Entity> imo$entities(ClientLevel level, Operation<Iterable<Entity>> original) {
+        Iterable<Entity> entities = original.call(level);
+        return Carbon.CONFIG.optimizeDroppedItems.get() ? Carbon.Client.DROPPED_RENDERER.collect(entities) : entities;
     }
 
     @Inject(method = "renderLevel", at = @At("HEAD"))

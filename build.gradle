@@ -44,6 +44,12 @@ repositories { mavenCentral() }
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.3.5'
+    annotationProcessor 'io.github.llamalad7:mixinextras-common:0.3.5'
+    implementation 'io.github.llamalad7:mixinextras-forge:0.3.5'
+    jarJar('io.github.llamalad7:mixinextras-forge:0.3.5') {
+        jarJar.ranged(it, '[0.3.5,)')
+    }
 }
 
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
@@ -56,7 +62,15 @@ tasks.withType(ProcessResources).configureEach {
 }
 tasks.withType(Jar).configureEach { from 'LICENSE' }
 tasks.named('jar', Jar) {
-    archiveClassifier = ''
+    archiveClassifier = 'slim'
     manifest.attributes('MixinConfigs': 'carbon.mixins.json')
     finalizedBy 'reobfJar'
 }
+
+tasks.named('jarJar', Jar) {
+    archiveClassifier = ''
+    manifest.attributes('MixinConfigs': 'carbon.mixins.json')
+    finalizedBy 'reobfJarJar'
+}
+
+reobf { jarJar {} }
