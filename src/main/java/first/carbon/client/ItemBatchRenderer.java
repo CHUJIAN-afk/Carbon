@@ -72,6 +72,7 @@ public final class ItemBatchRenderer {
     boolean physics;
     private boolean dedicated;
     public boolean capturing;
+    private List<?> sceneEntities;
     public int instances, collected, drawCalls, cacheMisses, shadowInstances, shadowDrawCalls;
     public long uploadedBytes, modelBytes;
 
@@ -148,7 +149,6 @@ public final class ItemBatchRenderer {
             instances = sceneInstances;
             collected = sceneCollected;
         }
-        if (reused) reuses++;
         if (blockCacheDirty) {
             lightCells.clear();
             lightCells.defaultReturnValue(-1);
@@ -173,7 +173,15 @@ public final class ItemBatchRenderer {
 
     public Iterable<Entity> collect(Iterable<Entity> entities) {
         if (!active || !dedicated) return entities;
-        if (reused) return remaining;
+        if ((entities instanceof List<?> || sceneEntities != null) && !entities.equals(sceneEntities)) {
+            reused = false;
+            updating = false;
+            updateQueue.clear();
+        }
+        if (reused) {
+            reuses++;
+            return remaining;
+        }
         long start = System.nanoTime();
         long budget = (long) (Carbon.CONFIG.cacheUpdateBudgetMs.get() * 1_000_000);
         var minecraft = Minecraft.getInstance();
@@ -183,6 +191,7 @@ public final class ItemBatchRenderer {
         boolean renderShadows = updating ? sceneShadows : minecraft.options.entityShadows().get() && !Carbon.IRIS.active();
         boolean rendererChecked = false, standardRenderer = false;
         if (starting) {
+            sceneEntities = entities instanceof List<?> list ? list : null;
             updating = true;
             updateIndex = updateInstances = updateCollected = 0;
             updateStationary = updateTickStable = true;
@@ -517,6 +526,7 @@ public final class ItemBatchRenderer {
         sceneCameraEntity = null;
         blockCacheDirty = true;
         sceneValid = false;
+        sceneEntities = null;
         sceneDirty = true;
         failed = false;
     }
