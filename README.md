@@ -8,7 +8,7 @@
 
 标准 `ItemRenderer.renderModelLists` 提交也可优化，覆盖手持、界面、展示和其他模组调用标准物品模型接口的场景。通用路径保留调用方的姿态、光照与叠加参数。无法保持排序或特殊顶点语义的情况交还原有渲染。
 
-可选物理旋转使用 ItemPhysicLite 的旋转组合顺序，有实际位移时绕模型局部 Y 轴翻滚，落地后沿较短方向平滑躺平，再停止计算。每个实体使用固定的微小高度偏移，减轻重叠表面的闪烁。仅影响视觉，不改变实体速度、碰撞或拾取。
+可选物理旋转使用 ItemPhysicLite 的旋转组合顺序，有实际位移时绕模型局部 Y 轴翻滚；平面物品落地立即平放，立体物品保留着地朝向并停止翻滚。每个实体使用固定的微小高度偏移，减轻重叠表面的闪烁。仅影响视觉，不改变实体速度、碰撞或拾取。
 
 ## 配置
 
@@ -38,8 +38,8 @@ Iris 访问集中在 `IrisCompatibility`，无需向 Iris 类注入 Mixin，也�
 
 ## 验证与构建
 
-[0.8 最终对照成绩](benchmark/final-0.8/README.md) · [0.7 测试报告与游戏截图](BENCHMARK.md) · [更新记录](CHANGELOG.md) · [SVG 封面](branding/mod-cover.svg)
+[0.9-A Chloride 兼容性验证](benchmark/chloride-0.9-A/README.md) · [0.8 最终对照成绩](benchmark/final-0.8/README.md) · [0.7 测试报告与游戏截图](BENCHMARK.md) · [更新记录](CHANGELOG.md) · [SVG 封面](branding/mod-cover.svg)
 
-使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.8.jar`。
+使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.9-A.jar`。
 
 0.8 已同步至 [1.20.1 Forge](https://github.com/CHUJIAN-afk/Carbon/tree/1.20.1-forge) 与 [26.1.2 NeoForge](https://github.com/CHUJIAN-afk/Carbon/tree/26.1.2-neoforge)，各分支的构建与实测见 [多版本报告](benchmark/ports-0.8/README.md)。

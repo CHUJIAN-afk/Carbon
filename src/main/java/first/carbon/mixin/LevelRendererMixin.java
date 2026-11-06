@@ -20,13 +20,8 @@ import net.minecraft.world.entity.Entity;
 public abstract class LevelRendererMixin {
     @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"))
     private Iterable<Entity> imo$entities(ClientLevel level, Operation<Iterable<Entity>> original) {
-        var renderer = Carbon.DROPPED_RENDERER;
-        renderer.collecting = Carbon.CONFIG.optimizeDroppedItems.get();
-        try {
-            return original.call(level);
-        } finally {
-            renderer.collecting = false;
-        }
+        Iterable<Entity> entities = original.call(level);
+        return Carbon.CONFIG.optimizeDroppedItems.get() ? Carbon.DROPPED_RENDERER.collect(entities) : entities;
     }
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
