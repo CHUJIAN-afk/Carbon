@@ -36,10 +36,8 @@ Iris 访问集中在 `IrisCompatibility`，无需向 Iris 类注入 Mixin，也�
 
 已验证 Iris `1.8.14-beta.1+mc1.21.1` 与 Photon `v1.4`。光影的原生阴影由 Iris 管理，特殊通道在需要时保留原生提交。
 
-## 验证与构建
+## 构建
 
-[0.9-A Chloride 兼容性验证](benchmark/chloride-0.9-A/README.md) · [0.8 最终对照成绩](benchmark/final-0.8/README.md) · [0.7 测试报告与游戏截图](BENCHMARK.md) · [更新记录](CHANGELOG.md) · [SVG 封面](branding/mod-cover.svg)
+使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.9-B.jar`。
 
-使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.9-A.jar`。
-
-0.8 已同步至 [1.20.1 Forge](https://github.com/CHUJIAN-afk/Carbon/tree/1.20.1-forge) 与 [26.1.2 NeoForge](https://github.com/CHUJIAN-afk/Carbon/tree/26.1.2-neoforge)，各分支的构建与实测见 [多版本报告](benchmark/ports-0.8/README.md)。
+[更新记录](CHANGELOG.md)
