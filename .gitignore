@@ -6,3 +6,9 @@ run/
 *.iml
 run-forge/
 /release-video/
+
+/benchmark/
+/AGENTS.md
+/BENCHMARK.md
+/DESCRIPTION.md
+/DESCRIPTION.zh-CN.md

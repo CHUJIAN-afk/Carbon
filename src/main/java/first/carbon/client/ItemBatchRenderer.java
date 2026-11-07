@@ -209,7 +209,7 @@ public final class ItemBatchRenderer {
 
     public boolean submit(BakedModel model, ItemStack stack, int light, int overlay, PoseStack pose, VertexConsumer vertices) {
         boolean submitted = false;
-        if (!capturing && !failed && Carbon.CONFIG.enabled.get() && Carbon.Client.IRIS.canInstance() && !stack.isEmpty()
+        if (!capturing && !failed && Carbon.CONFIG.enabled.get() && Carbon.Client.IRIS.canInstance() && !Carbon.Client.IRIS.handPass() && !stack.isEmpty()
                 && model.getClass() == SimpleBakedModel.class && GL.getCapabilities().OpenGL33) {
             Target first = vertices instanceof Target target ? target : null;
             Target second = null;

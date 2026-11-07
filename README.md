@@ -33,8 +33,8 @@ cacheUpdateBudgetMs = 2.0
 
 Iris / Oculus 访问集中在 `IrisCompatibility`，未向光影模组注入 Mixin；无法保持原生通道语义时保留原有提交。
 
-## 验证与构建
+## 构建
 
-各分支的最终测试报告统一保存在 [主分支 0.8 多版本报告](https://github.com/CHUJIAN-afk/Carbon/blob/master/benchmark/ports-0.8/README.md)，本分支不保留测试过程文件。
+使用 Java 17，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.20.1.9-B.jar`。
 
-[0.9-A Chloride 兼容性验证](https://github.com/CHUJIAN-afk/Carbon/blob/master/benchmark/chloride-0.9-A/README.md) · [更新记录](CHANGELOG.md)。使用 Java 17 执行 `gradlew.bat build`，输出 `build/libs/carbon-1.20.1.9-A.jar`。
+[更新记录](CHANGELOG.md)

@@ -28,7 +28,7 @@ import static org.lwjgl.opengl.GL43.*;
 public final class IrisCompatibility {
     private String namespace = "net.irisshaders.iris.";
     private boolean checked, present, active, blocked;
-    private MethodHandle packInUse, shadowPass, pipelineGetter, getEntity, setEntity, getItem, setItem, getBlock, setBlock;
+    private MethodHandle packInUse, shadowPass, pipelineGetter, handPass, getEntity, setEntity, getItem, setItem, getBlock, setBlock;
     private Object pipeline;
     private Object settings;
     private Object itemEntityId;
@@ -54,6 +54,8 @@ public final class IrisCompatibility {
                 shadowPass = lookup.unreflect(Class.forName(namespace + "shadows.ShadowRenderingState").getMethod("areShadowsCurrentlyBeingRendered"));
                 Object manager = Class.forName(namespace + "Iris").getMethod("getPipelineManager").invoke(null);
                 pipelineGetter = lookup.unreflect(manager.getClass().getMethod("getPipelineNullable")).bindTo(manager);
+                Class<?> hand = Class.forName(namespace + "pathways.HandRenderer");
+                handPass = lookup.unreflect(hand.getMethod("isActive")).bindTo(hand.getField("INSTANCE").get(null));
                 Class<?> captured = Class.forName(namespace + "uniforms.CapturedRenderingState");
                 Object state = captured.getField("INSTANCE").get(null);
                 getEntity = lookup.unreflect(captured.getMethod("getCurrentRenderedEntity")).bindTo(state);
@@ -119,6 +121,15 @@ public final class IrisCompatibility {
         return shadow;
     }
 
+    public boolean handPass() {
+        boolean hand = false;
+        if (active) {
+            try { hand = (boolean) handPass.invokeExact(); }
+            catch (Throwable exception) { blocked = true; }
+        }
+        return hand;
+    }
+
     public boolean vanillaShadows() {
         boolean allowed = true;
         if (active && pipeline != null) {
@@ -165,7 +176,7 @@ public final class IrisCompatibility {
 
     public VertexConsumer getBuffer(MultiBufferSource source, RenderType type) {
         MultiBufferSource original = source;
-        if (active && canInstance()) {
+        if (active && canInstance() && !handPass()) {
             if (shadowPass() && (type == RenderType.glint() || type == RenderType.glintTranslucent()
                     || type == RenderType.entityGlint() || type == RenderType.entityGlintDirect())) return source.getBuffer(type);
             try {
@@ -198,6 +209,7 @@ public final class IrisCompatibility {
     public ShaderInstance shader(ShaderInstance selected, RenderType type, boolean dropped) {
         if (active && pipeline != null && (dropped || type instanceof Layer)) {
             try {
+                if (!dropped && handPass()) return selected;
                 RenderType original = unwrap(type);
                 String key;
                 if (shadowPass()) key = "SHADOW_ENTITIES_CUTOUT";
@@ -212,7 +224,7 @@ public final class IrisCompatibility {
                 Object shaderKey = Enum.valueOf((Class) keys, key);
                 Object shader = shaders.getClass().getMethod("getShader", keys).invoke(shaders, shaderKey);
                 if (shader instanceof ShaderInstance instance) return instance;
-            } catch (ReflectiveOperationException exception) {
+            } catch (Throwable exception) {
                 blocked = true;
             }
         }
@@ -399,7 +411,8 @@ public final class IrisCompatibility {
                 for (int i = 0; i < glGetProgrami(source, GL_ACTIVE_ATTRIBUTES); i++) {
                     String name = glGetActiveAttrib(source, i, 256, size, type);
                     String attribute = name.equals("Position") || name.equals("Normal") || name.equals("Color") || name.startsWith("UV") ? "iris_" + name : name;
-                    glBindAttribLocation(id, glGetAttribLocation(source, name), attribute);
+                    int location = glGetAttribLocation(source, name);
+                    if (location >= 0) glBindAttribLocation(id, location, attribute);
                 }
                 int outputs = glGetProgramInterfacei(source, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES);
                 for (int i = 0; i < outputs; i++) {
