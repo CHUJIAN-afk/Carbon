@@ -33,8 +33,8 @@ cacheUpdateBudgetMs = 2.0
 
 Iris 检测集中在 `IrisCompatibility`。本分支的新 RenderPipeline 与 1.21.1 不同，启用光影包时保留原生物品提交，避免错误的渲染目标、材质和阴影。
 
-## 验证与构建
+## 构建
 
-各分支的最终测试报告统一保存在 [主分支 0.8 多版本报告](https://github.com/CHUJIAN-afk/Carbon/blob/master/benchmark/ports-0.8/README.md)，本分支不保留测试过程文件。
+使用 Java 25，执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.9-B.jar`。
 
-[0.9-A Chloride 兼容性验证](https://github.com/CHUJIAN-afk/Carbon/blob/master/benchmark/chloride-0.9-A/README.md) · [更新记录](CHANGELOG.md)。使用 Java 25 执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.9-A.jar`。
+[更新记录](CHANGELOG.md)
