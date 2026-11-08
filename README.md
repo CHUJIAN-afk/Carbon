@@ -1,6 +1,6 @@
 # Carbon（碳）
 
-Minecraft 1.20.1 / Forge 47.0.0 及以上（构建使用 47.4.22） 客户端 GPU 物品模型渲染优化模组，Java 17，MIT 许可证。
+Minecraft 1.20.1 / Forge 47.0.0 及以上（构建使用 47.0.0） 客户端 GPU 物品模型渲染优化模组，Java 17，MIT 许可证。
 
 ![Carbon](branding/mod-cover.svg)
 
@@ -35,6 +35,6 @@ Iris / Oculus 访问集中在 `IrisCompatibility`，未向光影模组注入 Mix
 
 ## 构建
 
-使用 Java 17，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.20.1.9-B.jar`。
+使用 Java 17，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.20.1.9-C.jar`。
 
 [更新记录](CHANGELOG.md)

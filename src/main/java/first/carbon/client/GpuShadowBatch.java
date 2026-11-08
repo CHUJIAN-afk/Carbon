@@ -25,7 +25,7 @@ final class GpuShadowBatch implements AutoCloseable {
     final Long2ObjectOpenHashMap<Receiver> receivers = new Long2ObjectOpenHashMap<>();
     private final Receiver empty = new Receiver(null, 0);
     private final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
-    private final RenderType type = RenderType.entityShadow(ResourceLocation.withDefaultNamespace("textures/misc/shadow.png"));
+    private final RenderType type = RenderType.entityShadow(new ResourceLocation("minecraft", "textures/misc/shadow.png"));
     private final int program;
     private final int vao;
     private final int buffer;
