@@ -21,14 +21,14 @@ public final class ItemConfigScreen extends Screen {
     @Override
     protected void init() {
         var settings = java.util.List.of(Carbon.CONFIG.enabled,
-                Carbon.CONFIG.optimizeDroppedItems, Carbon.CONFIG.physicalDroppedItems, Carbon.CONFIG.skipVisibilityChecks);
-        String[] names = {"enabled", "optimizeDroppedItems", "physicalDroppedItems", "skipVisibilityChecks"};
+                Carbon.CONFIG.optimizeDroppedItems, Carbon.CONFIG.optimizeGuiItems, Carbon.CONFIG.physicalDroppedItems, Carbon.CONFIG.skipVisibilityChecks);
+        String[] names = {"enabled", "optimizeDroppedItems", "optimizeGuiItems", "physicalDroppedItems", "skipVisibilityChecks"};
         for (int i = 0; i < settings.size(); i++) {
             var setting = settings.get(i);
             String key = names[i];
             addRenderableWidget(CycleButton.onOffBuilder(setting.get())
                     .withTooltip(value -> Tooltip.create(Component.translatable("carbon.configuration." + key + ".tooltip")))
-                    .create(width / 2 - 100, height / 2 - 48 + i * 24, 200, 20,
+                    .create(width / 2 - 100, height / 2 - 72 + i * 24, 200, 20,
                             Component.translatable("carbon.configuration." + key), (button, value) -> {
                                 setting.set(value);
                                 Carbon.CONFIG.spec.save();

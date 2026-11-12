@@ -3,6 +3,7 @@ package first.carbon.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import first.carbon.Carbon;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
@@ -209,7 +210,9 @@ public final class ItemBatchRenderer {
 
     public boolean submit(BakedModel model, ItemStack stack, int light, int overlay, PoseStack pose, VertexConsumer vertices) {
         boolean submitted = false;
+        boolean gui = RenderSystem.getVertexSorting() == VertexSorting.ORTHOGRAPHIC_Z;
         if (!capturing && !failed && Carbon.CONFIG.enabled.get() && Carbon.Client.IRIS.canInstance() && !Carbon.Client.IRIS.handPass() && !stack.isEmpty()
+                && (!gui || Carbon.CONFIG.optimizeGuiItems.get() && !Carbon.Client.IRIS.active())
                 && model.getClass() == SimpleBakedModel.class && GL.getCapabilities().OpenGL33) {
             Target first = vertices instanceof Target target ? target : null;
             Target second = null;
@@ -219,6 +222,7 @@ public final class ItemBatchRenderer {
                 if (second == null) first = null;
             }
             if (first != null && first.imo$source() != null && supported(first.imo$type())
+                    && (!gui || first.imo$source().getClass() == MultiBufferSource.BufferSource.class)
                     && (second == null || (second.imo$source() == first.imo$source() && supported(second.imo$type())))) {
                 if (program == 0) {
                     int vertex = 0, fragment = 0;
@@ -277,6 +281,7 @@ public final class ItemBatchRenderer {
                     }
                     cached.lastFrame = frame;
                     if (cached.batch != null) {
+                        if (gui) first.imo$source().endBatch();
                         Source source = sources.computeIfAbsent(first.imo$source(), key -> new Source());
                         // 先准备全部通道，再写入实例，避免只接管附魔光效的一半。
                         Submission a = source.layers.computeIfAbsent(first.imo$type(), key -> new Reference2ObjectOpenHashMap<>())
@@ -291,6 +296,10 @@ public final class ItemBatchRenderer {
                         cached.batch.lastFrame = frame;
                         instances++;
                         submitted = true;
+                        if (gui) {
+                            flush(first.imo$source(), first.imo$type());
+                            if (second != null) flush(second.imo$source(), second.imo$type());
+                        }
                     }
                 }
             }
@@ -324,6 +333,8 @@ public final class ItemBatchRenderer {
             ShaderInstance shader = Carbon.Client.IRIS.shader(RenderSystem.getShader(), type, false);
             try (MemoryStack memory = MemoryStack.stackPush()) {
                 if (shader != null) {
+                    for (int sampler = 0; sampler < 12; sampler++) shader.setSampler("Sampler" + sampler, RenderSystem.getShaderTexture(sampler));
+                    RenderSystem.setupShaderLights(shader);
                     if (shader.MODEL_VIEW_MATRIX != null) shader.MODEL_VIEW_MATRIX.set(RenderSystem.getModelViewMatrix()); if (shader.PROJECTION_MATRIX != null) shader.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
                     Carbon.Client.IRIS.apply(shader);
                 }

@@ -21,13 +21,14 @@ public final class Carbon {
 
     public static final class Settings {
         public final ForgeConfigSpec spec;
-        public final ForgeConfigSpec.BooleanValue enabled, optimizeDroppedItems, physicalDroppedItems, skipVisibilityChecks;
+        public final ForgeConfigSpec.BooleanValue enabled, optimizeDroppedItems, optimizeGuiItems, physicalDroppedItems, skipVisibilityChecks;
         public final ForgeConfigSpec.DoubleValue cacheUpdateBudgetMs;
 
         private Settings() {
             ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
             enabled = builder.translation("carbon.configuration.enabled").define("enabled", true);
             optimizeDroppedItems = builder.translation("carbon.configuration.optimizeDroppedItems").define("optimizeDroppedItems", true);
+            optimizeGuiItems = builder.comment("Optimize GUI items. Disabled by default because gains are usually small. Keep per-item draw boundaries; custom buffers and shader packs retain native GUI rendering.").translation("carbon.configuration.optimizeGuiItems").define("optimizeGuiItems", false);
             physicalDroppedItems = builder.translation("carbon.configuration.physicalDroppedItems").define("physicalDroppedItems", false);
             skipVisibilityChecks = builder.translation("carbon.configuration.skipVisibilityChecks").define("skipVisibilityChecks", true);
             cacheUpdateBudgetMs = builder.comment("CPU cache update budget per frame in milliseconds. 0 updates immediately; a single item can exceed the budget.").translation("carbon.configuration.cacheUpdateBudgetMs").defineInRange("cacheUpdateBudgetMs", 2.0, 0.0, 20.0);
