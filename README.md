@@ -4,7 +4,7 @@ Minecraft 26.1.2 / NeoForge 26.1.2 系列（构建使用 26.1.2.108） 客户端
 
 ![Carbon](branding/mod-cover.svg)
 
-缓存重复物品的模型几何，通过 GPU 实例化合并绘制。原生 `ItemFeatureRenderer` 的物品提交保留调用者的变换、光照和叠加参数，覆盖掉落物、手持、界面及其他调用标准接口的渲染。特殊投影光效、自定义材质和需排序的半透明模型保留原生处理。
+缓存重复物品的模型几何，通过 GPU 实例化合并绘制。原生 `ItemFeatureRenderer` 的物品提交保留调用者的变换、光照和叠加参数，覆盖掉落物、手持及其他调用标准接口的渲染；界面物品优化需要手动开启。特殊投影光效、自定义材质和需排序的半透明模型保留原生处理。
 
 默认启用掉落物专用管线，在 GPU 计算自旋、浮动和缩放，复用静止场景记录；普通附魔光效与地面阴影同样参与实例化。可选物理化沿模型局部轴翻滚，停止后平滑躺平，并加入每个实体固定的微小高度偏移。物理效果仅改变视觉，不修改速度、碰撞或拾取。
 
@@ -15,6 +15,7 @@ Minecraft 26.1.2 / NeoForge 26.1.2 系列（构建使用 26.1.2.108） 客户端
 ```toml
 enabled = true
 optimizeDroppedItems = true
+optimizeGuiItems = false
 physicalDroppedItems = false
 skipVisibilityChecks = true
 cacheUpdateBudgetMs = 2.0
@@ -22,6 +23,7 @@ cacheUpdateBudgetMs = 2.0
 
 - `enabled`：优化总开关。
 - `optimizeDroppedItems`：默认开启掉落物专用 GPU 管线；关闭后保留原有掉落物变换，通过标准模型提交继续优化。
+- `optimizeGuiItems`：默认关闭，控制界面物品优化；开启后保留单个物品的绘制顺序、裁剪和光照边界。自定义缓冲源与光影环境继续使用原生 GUI 渲染。
 - `physicalDroppedItems`：默认关闭，需要开启掉落物专用管线；落地姿态收稳后停止派发变换计算。
 - `skipVisibilityChecks`：专用管线默认跳过遮挡与视锥检查，完整提交距离内的普通掉落物；距离限制始终有效。
 
@@ -35,6 +37,6 @@ Iris 检测集中在 `IrisCompatibility`。本分支的新 RenderPipeline 与 1.
 
 ## 构建
 
-使用 Java 25，执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.9-B.jar`。
+使用 Java 25，执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.10.jar`。
 
 [更新记录](CHANGELOG.md)

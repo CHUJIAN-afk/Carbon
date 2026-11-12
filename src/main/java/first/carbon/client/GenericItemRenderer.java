@@ -1,6 +1,7 @@
 package first.carbon.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.ProjectionType;
 import first.carbon.Carbon;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -12,6 +13,7 @@ import net.minecraft.client.renderer.rendertype.TextureTransform;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.Items;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
@@ -40,6 +42,7 @@ public final class GenericItemRenderer {
             irisGeneration = Carbon.IRIS.generation;
         }
         active = !failed && Carbon.CONFIG.enabled.get() && Carbon.IRIS.canInstance() && Carbon.IRIS.canSubmit()
+                && (RenderSystem.getProjectionType() != ProjectionType.ORTHOGRAPHIC || Carbon.CONFIG.optimizeGuiItems.get() && !Carbon.IRIS.active())
                 && Minecraft.getInstance().getMainRenderTarget().getColorTexture() instanceof com.mojang.blaze3d.opengl.GlTexture
                 && GL.getCapabilities().OpenGL33 && RenderSystem.getProjectionMatrixBuffer() != null && RenderSystem.getShaderFog() != null;
         if (active && Carbon.IRIS.active()) Carbon.RENDERER.drawIrisShadows();
@@ -71,6 +74,7 @@ public final class GenericItemRenderer {
 
     public boolean submit(SubmitNodeStorage.ItemSubmit submit) {
         if (!active || submit.outlineColor() != 0 || submit.overlayCoords() != OverlayTexture.NO_OVERLAY
+                || submit.displayContext() == ItemDisplayContext.GUI && (!Carbon.CONFIG.optimizeGuiItems.get() || Carbon.IRIS.active())
                 || submit.foilType() == ItemStackRenderState.FoilType.SPECIAL || submit.quads().isEmpty()) return false;
         int[] captured = Carbon.IRIS.capture(submit);
         try {

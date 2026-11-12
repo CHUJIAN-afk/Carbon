@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
+import net.minecraft.world.item.ItemDisplayContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,7 +18,8 @@ public abstract class ItemFeatureRendererMixin {
 
     @Inject(method = "renderItem", at = @At("HEAD"), cancellable = true)
     private void carbon$submit(MultiBufferSource.BufferSource buffers, OutlineBufferSource outline, SubmitNodeStorage.ItemSubmit submit, CallbackInfo ci) {
-        if (Carbon.GENERIC.submit(submit)) ci.cancel();
+        if ((submit.displayContext() != ItemDisplayContext.GUI || buffers.getClass() == MultiBufferSource.BufferSource.class)
+                && Carbon.GENERIC.submit(submit)) ci.cancel();
     }
 
     @Inject(method = {"renderSolid", "renderTranslucent"}, at = @At("TAIL"))
