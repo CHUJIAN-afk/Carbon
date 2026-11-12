@@ -2,6 +2,8 @@ package first.carbon.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexSorting;
+import com.mojang.blaze3d.systems.RenderSystem;
 import first.carbon.Carbon;
 import first.carbon.client.ItemBatchRenderer;
 import net.minecraft.client.Minecraft;
@@ -20,12 +22,13 @@ public abstract class ItemRendererMixin {
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;hasFoil()Z"))
     private boolean imo$foil(ItemStack stack) {
         return !Carbon.DROPPED_RENDERER.capturingModel()
-                && ((ItemBatchRenderer.FoilState) (Object) stack).imo$foil(Minecraft.getInstance().gui.getGuiTicks());
+                && (RenderSystem.getVertexSorting() == VertexSorting.ORTHOGRAPHIC_Z
+                ? stack.hasFoil() : ((ItemBatchRenderer.FoilState) (Object) stack).imo$foil(Minecraft.getInstance().gui.getGuiTicks()));
     }
 
     @Redirect(method = {"getFoilBufferDirect", "getFoilBuffer", "getCompassFoilBuffer"}, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"))
     private static VertexConsumer carbon$buffer(net.minecraft.client.renderer.MultiBufferSource source, net.minecraft.client.renderer.RenderType type) {
-        return Carbon.IRIS.getBuffer(source, type);
+        return RenderSystem.getVertexSorting() == VertexSorting.ORTHOGRAPHIC_Z ? source.getBuffer(type) : Carbon.IRIS.getBuffer(source, type);
     }
 
     @Inject(method = "renderModelLists", at = @At("HEAD"), cancellable = true)

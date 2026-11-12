@@ -6,7 +6,7 @@
 
 缓存重复物品的模型几何，通过 GPU 实例化合并绘制。默认使用掉落物专用管线，在 GPU 计算自旋、浮动与缩放，并复用未变化的场景记录；普通附魔光效与原版圆形阴影同样参与实例化。
 
-标准 `ItemRenderer.renderModelLists` 提交也可优化，覆盖手持、界面、展示和其他模组调用标准物品模型接口的场景。通用路径保留调用方的姿态、光照与叠加参数。无法保持排序或特殊顶点语义的情况交还原有渲染。
+标准 `ItemRenderer.renderModelLists` 提交也可优化，覆盖手持、展示和其他模组调用标准物品模型接口的场景；界面物品优化需要手动开启。通用路径保留调用方的姿态、光照与叠加参数。无法保持排序或特殊顶点语义的情况交还原有渲染。
 
 可选物理旋转使用 ItemPhysicLite 的旋转组合顺序，有实际位移时绕模型局部 Y 轴翻滚；平面物品落地立即平放，立体物品保留着地朝向并停止翻滚。每个实体使用固定的微小高度偏移，减轻重叠表面的闪烁。仅影响视觉，不改变实体速度、碰撞或拾取。
 
@@ -17,6 +17,7 @@
 ```toml
 enabled = true
 optimizeDroppedItems = true
+optimizeGuiItems = false
 physicalDroppedItems = false
 skipVisibilityChecks = true
 cacheUpdateBudgetMs = 2.0
@@ -24,6 +25,7 @@ cacheUpdateBudgetMs = 2.0
 
 - `enabled`：优化总开关。
 - `optimizeDroppedItems`：默认启用掉落物专用 GPU 管线；关闭后保留其他模组的掉落物变换，标准模型接口继续参与通用实例化。
+- `optimizeGuiItems`：默认关闭，控制界面物品优化；开启后保留单个物品的绘制顺序、裁剪和光照边界。自定义缓冲源与光影环境继续使用原生 GUI 渲染。
 - `physicalDroppedItems`：默认关闭的物理旋转视觉效果，需要开启专用管线。OpenGL 4.3 下缓存静止变换，旧设备使用顶点着色器路径。
 - `skipVisibilityChecks`：默认开启，恢复 0.7 的行为，跳过视锥与遮挡检查，提交距离内的普通掉落物，包括摄像机后的物品；仅转向时复用场景。关闭后恢复完整可见性检查，渲染距离限制始终有效。
 - `cacheUpdateBudgetMs`：过期的掉落物缓存排队分帧更新，每帧默认分配 2 毫秒，可设为 0–20 毫秒，0 表示当帧立即完成。队列完成前继续绘制上一份场景；预算仅限制缓存更新，不限制整帧耗时，单个复杂物品的更新可能超出预算。
@@ -38,6 +40,6 @@ Iris 访问集中在 `IrisCompatibility`，无需向 Iris 类注入 Mixin，也�
 
 ## 构建
 
-使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.9-B.jar`。
+使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.10.jar`。
 
 [更新记录](CHANGELOG.md)
