@@ -1,5 +1,11 @@
 # 更新记录
 
+## 1.21.1.11 — 2026-11-27
+
+- 修复与 EntityCulling 同装时，Carbon 接管的掉落物可能因跳过完整客户端 tick 而出现动画卡顿。
+- 新增默认开启的 `skipEntityCullingForBatchedItems`：仅对已合批的掉落物跳过 EntityCulling 的可见性检查；其他物品与实体保留原有裁剪。
+- 关闭此项或上游接口不兼容时，先由 EntityCulling 处理可见性，再交给 Carbon 批处理。
+
 ## 1.21.1.10 — 2026-11-12
 
 - 新增默认关闭的 `optimizeGuiItems` 配置及中英文界面说明，通常无需为少量 GUI 物品启用优化。

@@ -20,6 +20,7 @@ optimizeDroppedItems = true
 optimizeGuiItems = false
 physicalDroppedItems = false
 skipVisibilityChecks = true
+skipEntityCullingForBatchedItems = true
 cacheUpdateBudgetMs = 2.0
 ```
 
@@ -28,6 +29,7 @@ cacheUpdateBudgetMs = 2.0
 - `optimizeGuiItems`：默认关闭，控制界面物品优化；开启后保留单个物品的绘制顺序、裁剪和光照边界。自定义缓冲源与光影环境继续使用原生 GUI 渲染。
 - `physicalDroppedItems`：默认关闭的物理旋转视觉效果，需要开启专用管线。OpenGL 4.3 下缓存静止变换，旧设备使用顶点着色器路径。
 - `skipVisibilityChecks`：默认开启，恢复 0.7 的行为，跳过视锥与遮挡检查，提交距离内的普通掉落物，包括摄像机后的物品；仅转向时复用场景。关闭后恢复完整可见性检查，渲染距离限制始终有效。
+- `skipEntityCullingForBatchedItems`：默认开启。只对 Carbon 已合批的掉落物跳过 EntityCulling 的遮挡检查，并保留完整客户端 tick。关闭或上游接口不兼容时，先经过 EntityCulling，再由 Carbon 批处理；此时专用场景缓存和可见性跳过选项不适用。
 - `cacheUpdateBudgetMs`：过期的掉落物缓存排队分帧更新，每帧默认分配 2 毫秒，可设为 0–20 毫秒，0 表示当帧立即完成。队列完成前继续绘制上一份场景；预算仅限制缓存更新，不限制整帧耗时，单个复杂物品的更新可能超出预算。
 
 `/carbon enabled false` 关闭优化，`/carbon stats` 查看绘制和缓存统计。升级时替换旧的 Item Model Optimization Jar；新配置尚不存在时会迁移旧客户端配置。
@@ -40,6 +42,6 @@ Iris 访问集中在 `IrisCompatibility`，无需向 Iris 类注入 Mixin，也�
 
 ## 构建
 
-使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.10.jar`。
+使用 Java 21，执行 `gradlew.bat build`，输出 `build/libs/carbon-1.21.1.11.jar`。
 
 [更新记录](CHANGELOG.md)

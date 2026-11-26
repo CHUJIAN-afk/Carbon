@@ -63,6 +63,7 @@ public abstract class ItemEntityCacheMixin extends Entity implements DroppedItem
     @Override
     public void imo$invalidate() {
         imo$renderTick = Integer.MIN_VALUE;
+        if (imo$cache.entityCullingGeneration != -1) imo$cache.entityCullingGeneration = -1;
     }
 
     @Inject(method = {"readAdditionalSaveData", "setUnlimitedLifetime", "setExtendedLifetime", "makeFakeItem"}, at = @At("HEAD"))

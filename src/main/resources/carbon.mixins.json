@@ -16,6 +16,8 @@
     "ClientLevelMixin",
     "EntitySceneMixin",
     "ItemEntityCacheMixin",
+    "EntityCullingCaptureMixin",
+    "EntityCullingVisibilityMixin",
     "ItemEntityRendererMixin",
     "ItemStackSceneMixin"
   ],
