@@ -32,6 +32,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.minecraftforge.fml.ModList;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
@@ -110,11 +111,14 @@ public final class DroppedItemBatchRenderer {
     private int preparedProgram;
     private GpuDroppedInstanceProcessor processor;
     private GpuShadowBatch shadows;
-    private int generation;
+    private volatile int generation;
     private int frame;
     private boolean active;
     private boolean failed;
     private boolean enabled;
+    private boolean dedicated;
+    private volatile boolean bypassEntityCulling;
+    public volatile boolean entityCullingCaptureHook, entityCullingVisibilityHook;
     private int irisGeneration = -1;
     private final org.joml.Vector3f irisCamera = new org.joml.Vector3f();
     boolean physics;
@@ -213,7 +217,12 @@ public final class DroppedItemBatchRenderer {
             active = program != 0 && entityProgram != 0;
         }
         boolean skipVisibility = Carbon.CONFIG.skipVisibilityChecks.get();
-        boolean dedicated = !minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes() && !Carbon.Client.IRIS.shadowPass();
+        boolean entityCulling = ModList.get().isLoaded("entityculling");
+        dedicated = !minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes() && !Carbon.Client.IRIS.shadowPass() && (!entityCulling
+                || Carbon.CONFIG.skipEntityCullingForBatchedItems.get() && entityCullingCaptureHook && entityCullingVisibilityHook);
+        boolean bypass = entityCulling && dedicated && active;
+        if (bypassEntityCulling && !bypass) generation++;
+        bypassEntityCulling = bypass;
         if (!dedicated) {
             updating = false;
             updateQueue.clear();
@@ -409,8 +418,12 @@ public final class DroppedItemBatchRenderer {
         }
     }
 
+    public boolean skipsEntityCulling(ItemEntity item) {
+        return bypassEntityCulling && ((EntityCacheAccess) item).imo$cache().entityCullingGeneration == generation;
+    }
+
     public Iterable<Entity> collect(Iterable<Entity> entities) {
-        if (!active) return entities;
+        if (!active || !dedicated) return entities;
         var minecraft = Minecraft.getInstance();
         var dispatcher = minecraft.getEntityRenderDispatcher();
         if (dispatcher.shouldRenderHitBoxes() || Carbon.Client.IRIS.shadowPass()) return entities;
@@ -514,6 +527,11 @@ public final class DroppedItemBatchRenderer {
                         }
                     }
                 }
+            }
+            if (bypassEntityCulling) {
+                var cache = ((EntityCacheAccess) item).imo$cache();
+                int cullingGeneration = submitted ? generation : -1;
+                if (cache.entityCullingGeneration != cullingGeneration) cache.entityCullingGeneration = cullingGeneration;
             }
             if (!submitted && !culled) {
                 updateRemainingItems.add(item);
@@ -759,6 +777,7 @@ public final class DroppedItemBatchRenderer {
 
     private void clear() {
         active = false;
+        bypassEntityCulling = false;
         generation++;
         for (List<GpuDroppedItemBatch> bucket : buckets.values()) {
             for (GpuDroppedItemBatch batch : bucket) {
@@ -863,6 +882,7 @@ public final class DroppedItemBatchRenderer {
         private GpuDroppedItemBatch batch;
         private int version;
         private int generation = -1;
+        public volatile int entityCullingGeneration = -1;
         private boolean dynamicModel;
         private boolean dynamicFoil;
         private long motionTick = Long.MIN_VALUE;

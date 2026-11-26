@@ -21,14 +21,14 @@ public final class ItemConfigScreen extends Screen {
     @Override
     protected void init() {
         var settings = java.util.List.of(Carbon.CONFIG.enabled,
-                Carbon.CONFIG.optimizeDroppedItems, Carbon.CONFIG.optimizeGuiItems, Carbon.CONFIG.physicalDroppedItems, Carbon.CONFIG.skipVisibilityChecks);
-        String[] names = {"enabled", "optimizeDroppedItems", "optimizeGuiItems", "physicalDroppedItems", "skipVisibilityChecks"};
+                Carbon.CONFIG.optimizeDroppedItems, Carbon.CONFIG.optimizeGuiItems, Carbon.CONFIG.physicalDroppedItems, Carbon.CONFIG.skipVisibilityChecks, Carbon.CONFIG.skipEntityCullingForBatchedItems);
+        String[] names = {"enabled", "optimizeDroppedItems", "optimizeGuiItems", "physicalDroppedItems", "skipVisibilityChecks", "skipEntityCullingForBatchedItems"};
         for (int i = 0; i < settings.size(); i++) {
             var setting = settings.get(i);
             String key = names[i];
             addRenderableWidget(CycleButton.onOffBuilder(setting.get())
                     .withTooltip(value -> Tooltip.create(Component.translatable("carbon.configuration." + key + ".tooltip")))
-                    .create(width / 2 - 100, height / 2 - 72 + i * 24, 200, 20,
+                    .create(width / 2 - 110, height / 2 - 82 + i * 22, 220, 20,
                             Component.translatable("carbon.configuration." + key), (button, value) -> {
                                 setting.set(value);
                                 Carbon.CONFIG.spec.save();
@@ -36,7 +36,7 @@ public final class ItemConfigScreen extends Screen {
                                 Carbon.Client.DROPPED_RENDERER.invalidate();
                             }));
         }
-        var budget = addRenderableWidget(new AbstractSliderButton(width / 2 - 100, height / 2 + 48, 200, 20,
+        var budget = addRenderableWidget(new AbstractSliderButton(width / 2 - 110, height / 2 + 50, 220, 20,
                 Component.translatable("carbon.configuration.cacheUpdateBudgetMs").append(": " + Carbon.CONFIG.cacheUpdateBudgetMs.get() + " ms"),
                 Carbon.CONFIG.cacheUpdateBudgetMs.get() / 20) {
             @Override
@@ -52,7 +52,7 @@ public final class ItemConfigScreen extends Screen {
         });
         budget.setTooltip(Tooltip.create(Component.translatable("carbon.configuration.cacheUpdateBudgetMs.tooltip")));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-                .bounds(width / 2 - 100, height - 40, 200, 20).build());
+                .bounds(width / 2 - 110, height / 2 + 74, 220, 20).build());
     }
 
     @Override
