@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.ModList;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
@@ -54,7 +55,10 @@ public final class ItemBatchRenderer {
     private Vec3 camera = Vec3.ZERO, sceneCamera = Vec3.ZERO;
     private Frustum frustum;
     private float partialTick, clock;
-    private int ticks, frame, generation, program, entityProgram, preparedProgram, framebuffer;
+    private int ticks, frame, program, entityProgram, preparedProgram, framebuffer;
+    private volatile int generation;
+    private volatile boolean bypassEntityCulling;
+    public volatile boolean entityCullingCaptureHook, entityCullingVisibilityHook;
     private int irisGeneration;
     private double originX, originY, originZ;
     private GpuInstanceProcessor processor;
@@ -84,7 +88,9 @@ public final class ItemBatchRenderer {
             irisGeneration = Carbon.IRIS.generation;
         }
         var minecraft = Minecraft.getInstance();
-        boolean requested = Carbon.CONFIG.optimizeDroppedItems.get();
+        boolean entityCulling = ModList.get().isLoaded("entityculling");
+        boolean requested = Carbon.CONFIG.optimizeDroppedItems.get() && (!entityCulling
+                || Carbon.CONFIG.skipEntityCullingForBatchedItems.get() && entityCullingCaptureHook && entityCullingVisibilityHook);
         boolean physical = requested && Carbon.CONFIG.physicalDroppedItems.get();
         if (physics != physical || dedicated != requested) { clear(); physics = physical; dedicated = requested; }
         Vec3 position = camera.position();
@@ -131,6 +137,7 @@ public final class ItemBatchRenderer {
             }
             active = !failed && program != 0;
         }
+        bypassEntityCulling = entityCulling && dedicated && active;
         boolean shadowOption = minecraft.options.entityShadows().get() && !Carbon.IRIS.active();
         boolean skip = Carbon.CONFIG.skipVisibilityChecks.get();
         if (updating && (!position.equals(sceneCamera) || !visibilityMatrix.equals(sceneMatrix))) sceneDirty = true;
@@ -169,6 +176,10 @@ public final class ItemBatchRenderer {
             if (!retained) batch.physicsMoving = false;
             if (batch.count > 0 || updating && batch.updateCount > 0) batch.lastFrame = frame;
         }
+    }
+
+    public boolean skipsEntityCulling(ItemEntity item) {
+        return bypassEntityCulling && ((EntityCacheAccess) item).imo$cache().entityCullingGeneration == generation;
     }
 
     public Iterable<Entity> collect(Iterable<Entity> entities) {
@@ -226,6 +237,8 @@ public final class ItemBatchRenderer {
             updatedEntities++;
             boolean submitted = false;
             if (item.isRemoved()) continue;
+            EntityCache cache = ((EntityCacheAccess) item).imo$cache();
+            if (bypassEntityCulling && cache.entityCullingGeneration == generation) cache.entityCullingGeneration = -1;
             if (item.getClass() == ItemEntity.class && item != minecraft.getCameraEntity() && ((EntityCacheAccess) item).imo$eligible()) {
                 if (!rendererChecked) {
                     standardRenderer = dispatcher.getRenderer(item).getClass() == ItemEntityRenderer.class;
@@ -244,7 +257,6 @@ public final class ItemBatchRenderer {
                 if (skip ? !item.shouldRender(camera.x, camera.y, camera.z)
                         : !dispatcher.shouldRender(item, frustum, camera.x, camera.y, camera.z)) continue;
                 ItemStack stack = item.getItem();
-                EntityCache cache = ((EntityCacheAccess) item).imo$cache();
                 if (cache.generation != generation || (cache.stack != stack || cache.version != ((ComponentVersion) stack.getComponents()).imo$version() || cache.dynamicFoil && cache.foil != ((FoilState) (Object) stack).imo$foil(minecraft.gui.getGuiTicks())) || cache.batch != null && cache.batch.closed) {
                     cache.generation = generation;
                     cache.stack = stack;
@@ -291,6 +303,7 @@ public final class ItemBatchRenderer {
                     instances += copies;
                     collected++;
                     submitted = true;
+                    if (bypassEntityCulling) cache.entityCullingGeneration = generation;
                     cache.previousBuild = cache.sceneBuild;
                     cache.sceneBuild = builds + 1;
                     updateTickStable &= !cache.dynamicFoil;
@@ -502,6 +515,7 @@ public final class ItemBatchRenderer {
 
     private void clear() {
         active = false;
+        bypassEntityCulling = false;
         generation++;
         for (var bucket : buckets.values()) for (var batch : bucket) batch.close();
         buckets.clear();
@@ -559,6 +573,7 @@ public final class ItemBatchRenderer {
         private boolean foil, dynamicFoil;
         private GpuItemBatch batch;
         private int generation = -1;
+        public volatile int entityCullingGeneration = -1;
         private long motionTick = Long.MIN_VALUE;
         private long sceneBuild, previousBuild;
         private float roll, rate;

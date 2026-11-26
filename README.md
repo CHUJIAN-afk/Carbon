@@ -18,6 +18,7 @@ optimizeDroppedItems = true
 optimizeGuiItems = false
 physicalDroppedItems = false
 skipVisibilityChecks = true
+skipEntityCullingForBatchedItems = true
 cacheUpdateBudgetMs = 2.0
 ```
 
@@ -28,6 +29,7 @@ cacheUpdateBudgetMs = 2.0
 - `skipVisibilityChecks`：专用管线默认跳过遮挡与视锥检查，完整提交距离内的普通掉落物；距离限制始终有效。
 
 - `cacheUpdateBudgetMs`：每帧缓存更新预算，默认 2 毫秒，可设为 0–20 毫秒，0 表示立即完成；队列完成前绘制旧实例与阴影。单个物品更新可能超预算。
+- `skipEntityCullingForBatchedItems`：默认开启。只对 Carbon 已合批的掉落物跳过 EntityCulling 的遮挡检查，并保留完整客户端 tick。关闭或上游接口不兼容时，先经过 EntityCulling，再由 Carbon 批处理；此时专用场景缓存和可见性跳过选项不适用。26.1.2 在该回退模式下使用通用批处理，不启用物理化。
 
 `/carbon enabled false` 停用优化，`/carbon stats` 查看统计。新配置尚不存在时会迁移旧客户端配置；升级时替换旧 Jar。
 
@@ -37,6 +39,6 @@ Iris 检测集中在 `IrisCompatibility`。本分支的新 RenderPipeline 与 1.
 
 ## 构建
 
-使用 Java 25，执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.10.jar`。
+使用 Java 25，执行 `gradlew.bat build`，输出 `build/libs/carbon-26.1.2.11.jar`。
 
 [更新记录](CHANGELOG.md)

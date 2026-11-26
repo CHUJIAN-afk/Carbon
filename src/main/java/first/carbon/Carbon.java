@@ -65,6 +65,7 @@ public final class Carbon {
         public final ModConfigSpec.BooleanValue optimizeGuiItems;
         public final ModConfigSpec.BooleanValue physicalDroppedItems;
         public final ModConfigSpec.BooleanValue skipVisibilityChecks;
+        public final ModConfigSpec.BooleanValue skipEntityCullingForBatchedItems;
         public final ModConfigSpec.DoubleValue cacheUpdateBudgetMs;
 
         private Settings() {
@@ -74,6 +75,7 @@ public final class Carbon {
             optimizeGuiItems = builder.comment("Optimize GUI items. Disabled by default because gains are usually small. Custom buffers and shader packs retain native GUI rendering.").translation("carbon.configuration.optimizeGuiItems").define("optimizeGuiItems", false);
             physicalDroppedItems = builder.translation("carbon.configuration.physicalDroppedItems").define("physicalDroppedItems", false);
             skipVisibilityChecks = builder.comment("Submit batched items without vanilla frustum or Sodium visibility checks; distance limits still apply.").translation("carbon.configuration.skipVisibilityChecks").define("skipVisibilityChecks", true);
+            skipEntityCullingForBatchedItems = builder.comment("Skip EntityCulling for dropped items batched by Carbon.").translation("carbon.configuration.skipEntityCullingForBatchedItems").define("skipEntityCullingForBatchedItems", true);
             cacheUpdateBudgetMs = builder.comment("CPU cache update budget per frame in milliseconds. 0 updates immediately; a single item can exceed the budget.").translation("carbon.configuration.cacheUpdateBudgetMs").defineInRange("cacheUpdateBudgetMs", 2.0, 0.0, 20.0);
             spec = builder.build();
         }
